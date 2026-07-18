@@ -1,0 +1,45 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ===== Global mobile-first optimization ===== */
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Prevent accidental horizontal page scroll on small screens */
+#root {
+  overflow-x: hidden;
+}
+
+@layer components {
+  /* Thumb-friendly minimum tap target for touch devices */
+  .tap-target {
+    @apply min-h-[44px];
+  }
+}
+
+/* Forms: comfortable sizing on mobile to prevent iOS pinch-zoom on focus */
+@media (max-width: 768px) {
+  input,
+  select,
+  textarea,
+  button {
+    font-size: 16px;
+  }
+  input[type="date"] {
+    min-height: 44px;
+  }
+}
+
+/* Hide number-input spinners for a cleaner look */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}

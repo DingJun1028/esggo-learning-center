@@ -1,0 +1,24 @@
+# ===== Dependencies =====
+node_modules/
+.pnpm-lock.yaml
+yarn.lock
+
+# ===== Build output =====
+dist/
+dist-ssr/
+
+# ===== Local env (含 Firebase 私鑰/API Key，絕不可上版控) =====
+.env
+.env.local
+.env.*.local
+*.local
+
+# ===== Editor / OS =====
+.vscode/
+.idea/
+.DS_Store
+*.log
+
+# ===== Firebase deploy artifacts (optional) =====
+.firebase/
+firebase-debug.log
