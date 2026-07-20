@@ -24,7 +24,7 @@ const MAX_FILE_BYTES = 5 * 1024 * 1024;
 const MAX_TOTAL_BYTES = 700 * 1024;
 
 // 附件渲染：Firebase 模式用 url（下載網址），localStorage 降級用 data（base64）
-const renderFiles = (files) => (
+const renderFiles = (files, t) => (
   <div className="flex flex-col gap-2">
     {files.map((f, i) => {
       const href = f.url || f.data;
@@ -57,7 +57,7 @@ const DetailPanel = ({ t, item }) => {
       {item.type === 'upload' && (
         <>
           <Field label={t.detail.note} value={d.desc} />
-          {atts.length > 0 && (<><div className="text-xs font-bold text-slate-400 mb-0.5">{t.detail.files}</div>{renderFiles(atts)}</>)}
+          {atts.length > 0 && (<><div className="text-xs font-bold text-slate-400 mb-0.5">{t.detail.files}</div>{renderFiles(atts, t)}</>)}
           {atts.length === 0 && <div className="text-xs text-slate-400">{t.detail.noFiles}</div>}
         </>
       )}
@@ -74,7 +74,7 @@ const DetailPanel = ({ t, item }) => {
           <Field label={t.detail.question.role} value={d.role} />
           <Field label={t.detail.question.challenge} value={d.challenge} />
           <Field label={t.detail.question.mainQuestion} value={d.mainQuestion} />
-          {atts.length > 0 && (<><div className="text-xs font-bold text-slate-400 mb-0.5">{t.detail.supplements}</div>{renderFiles(atts)}</>)}
+          {atts.length > 0 && (<><div className="text-xs font-bold text-slate-400 mb-0.5">{t.detail.supplements}</div>{renderFiles(atts, t)}</>)}
         </>
       )}
       {item.type === 'survey' && (
@@ -96,7 +96,7 @@ const DetailPanel = ({ t, item }) => {
           <Field label={t.detail.survey.feedback + ' 1'} value={d.open?.open_1} />
           <Field label={t.detail.survey.feedback + ' 2'} value={d.open?.open_2} />
           <Field label={t.detail.survey.feedback + ' 3'} value={d.open?.open_3} />
-          {atts.length > 0 && (<><div className="text-xs font-bold text-slate-400 mb-0.5">{t.detail.supplements}</div>{renderFiles(atts)}</>)}
+          {atts.length > 0 && (<><div className="text-xs font-bold text-slate-400 mb-0.5">{t.detail.supplements}</div>{renderFiles(atts, t)}</>)}
         </>
       )}
     </div>
