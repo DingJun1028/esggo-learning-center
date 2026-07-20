@@ -769,10 +769,10 @@ export default function App() {
   };
 
   const DynamicForm = ({ type }) => {
+    const [formData, setFormData] = useState({});
     if (type === 'question') return <QuestionForm />;
     if (type === 'survey') return <SurveyForm />;
     const config = t.forms[type];
-    const [formData, setFormData] = useState({});
     const handleFiles = (fileList) => {
       const files = Array.from(fileList);
       const tooBig = files.some(f => f.size > MAX_FILE_BYTES);
