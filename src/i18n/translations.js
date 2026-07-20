@@ -78,6 +78,8 @@ export const translations = {
       taBio: '助教簡介', taModeEnabled: '助教模式已開啟', taModeDisabled: '助教模式已關閉',
       saveAndContinue: '儲存並繼續',
       signInSuccess: '登入成功', signInFailed: '登入失敗，請稍後再試。',
+      anonymous: '匿名使用者', profileTitle: '個人資料',
+      noPermission: '您的帳號無此權限，請聯繫管理員。',
     },
     admin: {
       loginTitle: '管理員登入', loginPassword: '管理員密碼', loginEnter: '進入', loginCancel: '取消',
@@ -304,6 +306,8 @@ export const translations = {
       taBio: '助教簡介', taModeEnabled: '助教模式已開啟', taModeDisabled: '助教模式已關閉',
       saveAndContinue: '储存并继续',
       signInSuccess: '登入成功', signInFailed: '登入失败，请稍后再试。',
+      anonymous: '匿名用户', profileTitle: '个人资料',
+      noPermission: '您的帐号无此权限，请联系管理员。',
     },
     admin: {
       loginTitle: '管理员登入', loginPassword: '管理员密码', loginEnter: '进入', loginCancel: '取消',
@@ -517,6 +521,8 @@ export const translations = {
       taBio: '助教簡介', taModeEnabled: '助教模式已開啟', taModeDisabled: '助教模式已關閉',
       saveAndContinue: '储存并继续',
       signInSuccess: '登入成功', signInFailed: '登入失败，请稍后再试。',
+      anonymous: '匿名用户', profileTitle: '个人资料',
+      noPermission: '您的帐号无此权限，请联系管理员。',
     },
     admin: {
       loginTitle: '管理员登入', loginPassword: '管理员密码', loginEnter: '进入', loginCancel: '取消',

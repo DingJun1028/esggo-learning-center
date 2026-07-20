@@ -21,6 +21,8 @@ import {
   getIdTokenResult,
 } from 'firebase/auth';
 import {
+  initializeFirestore,
+  persistentLocalCache,
   collection,
   onSnapshot,
   doc,
@@ -456,7 +458,11 @@ export const setCurrentRole = (role) => {
   emitTelemetry('role_set', { role });
 };
 
-export const getCurrentRole = () => role || 'student';
+let _currentRole = 'student';
+
+export const setCurrentRoleValue = (r) => { _currentRole = r; };
+
+export const getCurrentRole = () => _currentRole || 'student';
 
 // ============================================================
 // Pairing：助教 -> 學員配對
