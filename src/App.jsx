@@ -933,6 +933,22 @@ export default function App() {
       </div>
 
       <main className="p-4 sm:p-6">
+        {error && (
+          <div className="max-w-5xl mx-auto mb-6">
+            <div className="bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl p-4 whitespace-pre-wrap font-mono">
+              {typeof error === 'string' ? error : JSON.stringify(error, null, 2)}
+            </div>
+          </div>
+        )}
+        {authError && (
+          <div className="max-w-5xl mx-auto mb-6">
+            <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl p-4">
+              <span className="font-bold">登入錯誤：</span>
+              <span className="font-mono">{authError}</span>
+              <button onClick={clearAuthError} className="ml-3 underline text-xs font-semibold">清除</button>
+            </div>
+          </div>
+        )}
         {view === 'home' && (
           <div className="max-w-5xl mx-auto mb-10">
             <div className="bg-[#003262] rounded-2xl p-6 sm:p-10 md:p-16 text-center shadow-lg relative overflow-hidden border-b-4 border-[#FDB515]">
