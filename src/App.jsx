@@ -6,7 +6,7 @@ import {
 } from './db';
 import { getKnowledgeEntries, searchKnowledge } from './repositories/rag.repository';
 import { refreshRoleFromClaims, setupProfileIfMissing } from './repositories/auth.repository';
-import { getUserProfile } from './repositories/profile.repository';
+import { getUserProfile, upsertUserProfile } from './repositories/profile.repository';
 import {
   listPairingsForMentor, acceptPairing, declinePairing,
   subscribePairings, createPairingRequest, removePairing, PAIRING_STATUS
@@ -514,6 +514,43 @@ export default function App() {
     setKnowledgeEntries(results);
   };
 
+  // TA: load pairings when TA view activates
+  useEffect(() => {
+    if (view !== 'ta' || role !== 'TA' || !user?.uid) return;
+    let cancelled = false;
+    setTaPairingsLoading(true);
+    listPairingsForMentor(user.uid).then(data => {
+      if (!cancelled) { setTaPairings(data); setTaPairingsLoading(false); }
+    }).catch(() => { if (!cancelled) setTaPairingsLoading(false); });
+    return () => { cancelled = true; };
+  }, [view, role, user?.uid]);
+
+  // Admin: subscribe to all pairings in real-time
+  useEffect(() => {
+    if (role !== 'admin') return;
+    const unsub = subscribePairings(setAllPairings);
+    return () => { if (typeof unsub === 'function') unsub(); };
+  }, [role]);
+
+  const handleAcceptPairing = async (mentorUid, menteeUid) => {
+    await acceptPairing(mentorUid, menteeUid);
+    const updated = await listPairingsForMentor(user.uid);
+    setTaPairings(updated);
+  };
+  const handleDeclinePairing = async (mentorUid, menteeUid) => {
+    await declinePairing(mentorUid, menteeUid);
+    const updated = await listPairingsForMentor(user.uid);
+    setTaPairings(updated);
+  };
+  const handleCreatePairing = async () => {
+    if (!newPairingMentor.trim() || !newPairingMentee.trim()) return;
+    await createPairingRequest(newPairingMentor.trim(), newPairingMentee.trim());
+    setNewPairingMentor(''); setNewPairingMentee('');
+  };
+  const handleRemovePairing = async (mentorUid, menteeUid) => {
+    await removePairing(mentorUid, menteeUid);
+  };
+
   // 角色切換（基於 Firebase claims；admin/TA 需要 Google 登入後的 claims 驗證，密碼作為 fallback）
   const trySwitchRole = async (next) => {
     if (next === 'student') {
@@ -919,8 +956,65 @@ export default function App() {
         {view === 'ta' && role === 'TA' && (
           <div className="max-w-5xl mx-auto">
             <h2 className="text-xl sm:text-2xl font-bold text-[#003262] mb-4 sm:mb-6 flex items-center gap-3"><Users className="text-[#FDB515]" /> {t.taPanel || 'TA 助教視角'}</h2>
-            <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6 text-sm text-slate-600">
-              TA 助教視角頁面待後續串接配對名冊與學員資料，目前保留入口。
+
+            {/* Pairing List */}
+            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 sm:p-6 mb-6">
+              <h3 className="text-lg font-bold text-[#003262] mb-4 flex items-center gap-2"><Users size={18} /> {t.pairings?.listTitle || '配對名冊'}</h3>
+              {taPairingsLoading ? (
+                <div className="text-sm text-slate-400 py-4 text-center">Loading...</div>
+              ) : taPairings.length === 0 ? (
+                <div className="text-sm text-slate-400 py-4 text-center">{t.pairings?.empty || '目前尚無配對資料'}</div>
+              ) : (
+                <div className="flex flex-col gap-3">
+                  {taPairings.map(p => {
+                    const statusLabel = p.status === PAIRING_STATUS.ASSIGNED ? t.pairings?.statusAssigned
+                      : p.status === PAIRING_STATUS.PENDING ? t.pairings?.statusPending
+                      : p.status === PAIRING_STATUS.DECLINED ? t.pairings?.statusDeclined : p.status;
+                    const statusColor = p.status === PAIRING_STATUS.ASSIGNED ? 'bg-green-100 text-green-700 border-green-200'
+                      : p.status === PAIRING_STATUS.PENDING ? 'bg-yellow-100 text-yellow-700 border-yellow-200'
+                      : 'bg-red-100 text-red-700 border-red-200';
+                    const studentSubs = submissions.filter(s => s.userId === p.menteeUid);
+                    return (
+                      <div key={p.id} className="border border-slate-200 rounded-lg p-4 bg-slate-50/50">
+                        <div className="flex flex-wrap items-center gap-3 mb-2">
+                          <span className="font-semibold text-[#003262] text-sm">{t.pairings?.menteeId || '學員'}: <span className="font-mono text-xs bg-slate-100 px-2 py-0.5 rounded">{p.menteeUid}</span></span>
+                          <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full border ${statusColor}`}>{statusLabel}</span>
+                          {p.status === PAIRING_STATUS.PENDING && (
+                            <span className="flex gap-1.5 ml-auto">
+                              <button onClick={() => handleAcceptPairing(p.mentorUid, p.menteeUid)} className="flex items-center gap-1 bg-green-600 hover:bg-green-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors" title={t.pairings?.actionApprove}>
+                                <Check size={14} /> {t.pairings?.actionApprove || '接受'}
+                              </button>
+                              <button onClick={() => handleDeclinePairing(p.mentorUid, p.menteeUid)} className="flex items-center gap-1 bg-red-500 hover:bg-red-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors" title={t.pairings?.actionDecline}>
+                                <XCircle size={14} /> {t.pairings?.actionDecline || '婉拒'}
+                              </button>
+                            </span>
+                          )}
+                        </div>
+                        {/* Student submission summary for assigned students */}
+                        {p.status === PAIRING_STATUS.ASSIGNED && (
+                          <div className="mt-3 border-t border-slate-200 pt-3">
+                            <div className="text-xs font-bold text-slate-500 mb-2">{t.myRecords || '學員提交紀錄'} ({studentSubs.length})</div>
+                            {studentSubs.length === 0 ? (
+                              <div className="text-xs text-slate-400">尚無提交紀錄</div>
+                            ) : (
+                              <div className="flex flex-col gap-1.5">
+                                {studentSubs.slice(0, 5).map(s => (
+                                  <div key={s.id} className="flex items-center gap-2 text-xs bg-white border border-slate-100 rounded px-3 py-2">
+                                    <FileText size={12} className="text-[#FDB515] shrink-0" />
+                                    <span className="font-medium text-[#003262]">{s.type || '—'}</span>
+                                    <span className="text-slate-400 ml-auto">{s.timestamp ? new Date(s.timestamp).toLocaleDateString() : ''}</span>
+                                  </div>
+                                ))}
+                                {studentSubs.length > 5 && <div className="text-xs text-slate-400 text-center">+{studentSubs.length - 5} more</div>}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -929,6 +1023,68 @@ export default function App() {
           <>
             <h2 className="text-xl sm:text-2xl font-bold text-[#003262] max-w-5xl mx-auto mb-4 sm:mb-6 flex items-center gap-3"><ShieldCheck className="text-[#FDB515]" /> {t.admin}</h2>
             <RecordsView data={submissions} isAdmin={true} t={t} lang={lang} />
+
+            {/* Admin Pairing Management */}
+            <div className="max-w-5xl mx-auto mt-8">
+              <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 sm:p-6">
+                <h3 className="text-lg font-bold text-[#003262] mb-4 flex items-center gap-2"><Users size={18} className="text-[#FDB515]" /> {t.pairings?.listTitle || '配對名冊'}</h3>
+
+                {/* Create new pairing */}
+                <div className="flex flex-wrap items-end gap-3 mb-5 p-4 bg-slate-50 rounded-lg border border-slate-200">
+                  <div className="flex-1 min-w-[140px]">
+                    <label className="block text-xs font-bold text-slate-500 mb-1">{t.pairings?.mentorId || '助教'} UID</label>
+                    <input type="text" value={newPairingMentor} onChange={e => setNewPairingMentor(e.target.value)} placeholder="mentor UID" className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FDB515]/50 focus:border-[#FDB515]" />
+                  </div>
+                  <div className="flex-1 min-w-[140px]">
+                    <label className="block text-xs font-bold text-slate-500 mb-1">{t.pairings?.menteeId || '學員'} UID</label>
+                    <input type="text" value={newPairingMentee} onChange={e => setNewPairingMentee(e.target.value)} placeholder="mentee UID" className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FDB515]/50 focus:border-[#FDB515]" />
+                  </div>
+                  <button onClick={handleCreatePairing} className="flex items-center gap-1.5 bg-[#003262] hover:bg-[#002244] text-white text-sm font-bold px-4 py-2 rounded-lg transition-colors shadow-sm">
+                    <UserPlus size={14} /> {t.pairings?.assignMentor || '指派助教'}
+                  </button>
+                </div>
+
+                {/* Pairing list */}
+                {allPairings.length === 0 ? (
+                  <div className="text-sm text-slate-400 py-4 text-center">{t.pairings?.empty || '目前尚無配對資料'}</div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-slate-200 text-left">
+                          <th className="py-2 px-3 font-bold text-slate-500 text-xs">{t.pairings?.mentorId || '助教'}</th>
+                          <th className="py-2 px-3 font-bold text-slate-500 text-xs">{t.pairings?.menteeId || '學員'}</th>
+                          <th className="py-2 px-3 font-bold text-slate-500 text-xs">Status</th>
+                          <th className="py-2 px-3 font-bold text-slate-500 text-xs"></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {allPairings.map(p => {
+                          const statusLabel = p.status === PAIRING_STATUS.ASSIGNED ? t.pairings?.statusAssigned
+                            : p.status === PAIRING_STATUS.PENDING ? t.pairings?.statusPending
+                            : p.status === PAIRING_STATUS.DECLINED ? t.pairings?.statusDeclined : p.status;
+                          const statusColor = p.status === PAIRING_STATUS.ASSIGNED ? 'bg-green-100 text-green-700 border-green-200'
+                            : p.status === PAIRING_STATUS.PENDING ? 'bg-yellow-100 text-yellow-700 border-yellow-200'
+                            : 'bg-red-100 text-red-700 border-red-200';
+                          return (
+                            <tr key={p.id} className="border-b border-slate-100 hover:bg-slate-50/50">
+                              <td className="py-2.5 px-3 font-mono text-xs text-[#003262]">{p.mentorUid}</td>
+                              <td className="py-2.5 px-3 font-mono text-xs text-[#003262]">{p.menteeUid}</td>
+                              <td className="py-2.5 px-3"><span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${statusColor}`}>{statusLabel}</span></td>
+                              <td className="py-2.5 px-3 text-right">
+                                <button onClick={() => handleRemovePairing(p.mentorUid, p.menteeUid)} className="flex items-center gap-1 text-red-500 hover:text-red-700 text-xs font-semibold transition-colors ml-auto" title={t.pairings?.removeMentor}>
+                                  <Trash2 size={13} /> {t.pairings?.removeMentor || '移除'}
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
           </>
         )}
 
@@ -1011,7 +1167,6 @@ export default function App() {
                   email: profileForm.email,
                 });
                 // Also save org via upsert
-                const { upsertUserProfile } = await import('./repositories/profile.repository');
                 await upsertUserProfile(user.uid, {
                   displayName: profileForm.displayName,
                   email: profileForm.email,
