@@ -661,6 +661,16 @@ export default function App() {
         </div>
         {tab === 'write' ? (
           <form onSubmit={(e) => handleSubmit(e, 'question', formData)} className="flex flex-col gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">{t.question.fieldSubmitter} <span className="text-red-500">*</span></label>
+                <input required type="text" onChange={e => setFormData({ ...formData, submitterName: e.target.value })} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-[#003262] outline-none" placeholder={t.question.fieldSubmitterPlaceholder} />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">{t.question.fieldSubmitterEmail} <span className="text-red-500">*</span></label>
+                <input required type="email" onChange={e => setFormData({ ...formData, submitterEmail: e.target.value })} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-[#003262] outline-none" placeholder={t.question.fieldSubmitterEmailPlaceholder} />
+              </div>
+            </div>
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-1">{t.question.fieldRole}</label>
               <input required type="text" onChange={e => setFormData({ ...formData, role: e.target.value })} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-[#003262] outline-none" placeholder={t.question.fieldRolePlaceholder} />
