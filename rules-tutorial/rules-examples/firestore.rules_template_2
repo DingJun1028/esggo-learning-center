@@ -13,15 +13,15 @@ service cloud.firestore {
     // Let's start the improvement by restricting
     // matches to 'cart' documents in the 'carts' collection.
     // DELETE OR COMMENT OUT THE FOLLOWING LINE.
-    match /{document=**} {
+    // match /{document=**} {
     // UNCOMMENT THE FOLLOWING LINE.
-    // match /carts/{cartID} {
+    match /carts/{cartID} {
     // With carts matched, now allow reads and writes when
     // the requester's ID matches the ownerID of the data.
     // DELETE OR COMMENT OUT
-      allow read, write: if false;
+      // allow read, write: if false;
     // UNCOMMENT THE FOLLOWING LINE.
-    //  allow create: if request.auth.uid == request.resource.data.ownerUID;
+      allow create: if request.auth.uid == request.resource.data.ownerUID;
     }
  
   match /items/{itemID} {

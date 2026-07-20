@@ -15,7 +15,7 @@ service cloud.firestore {
  
   match /carts/{cartID}/items/{itemID} {
     // ADD THE 'read' OPERATION TO THE FOLLOWING LINE.
-    allow write: if // that is, 'allow read, write: if'
+    allow read, write: if // that is, 'allow read, write: if'
       get(/databases/$(database)/documents/carts/$(cartID))
       .data.ownerUID == request.auth.uid;
     }
