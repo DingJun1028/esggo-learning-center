@@ -1,15 +1,54 @@
 rules_version = '2';
 
-// 資料模型：
-//   /artifacts/{appId}/public/data/submissions/{docId}
-//     - 匿名登入的學員都能讀寫（課程平台開放提交）
-//     - 單一文件大小上限 1MB（大附件以 base64 內嵌於文件中，總量在前端限制 700KB）
-//     - 本專案不使用 Cloud Storage（Spark 免費方案不提供，需 Blaze 計費），附件內嵌 Firestore
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /artifacts/{appId}/public/data/submissions/{docId} {
-      allow read, create, update, delete: if request.auth != null
-        && request.resource.size() <= 1 * 1024 * 1024;
+
+    function authenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return authenticated() && request.auth.token.role == 'admin';
+    }
+
+    function isTA() {
+      return authenticated() && request.auth.token.role in ['TA', 'admin'];
+    }
+
+    match /platforms/{platformId} {
+      allow read: if authenticated();
+      allow write: if authenticated() && request.resource.size() <= 1 * 1024 * 1024;
+
+      match /submissions/{docId} {
+        allow read: if isAdmin() || resource.data.userId == request.auth.uid;
+        allow create: if authenticated()
+          && request.resource.data.keys().hasAll(['userId', 'type'])
+          && request.resource.data.userId == request.auth.uid
+          && request.resource.size() <= 1 * 1024 * 1024;
+        allow update, delete: if isAdmin()
+          || (authenticated() && resource.data.userId == request.auth.uid);
+      }
+
+      match /profiles/{userId} {
+        allow read: if authenticated();
+        allow write: if isAdmin() || request.auth.uid == userId;
+      }
+
+      match /mentors/{mentorId} {
+        allow read: if authenticated();
+        allow write: if isAdmin() || request.auth.uid == mentorId;
+      }
+
+      match /pairings/{pairingId} {
+        allow read: if authenticated();
+        allow write: if isAdmin()
+          || (authenticated() && (
+            resource.data.mentorUid == request.auth.uid
+            || request.resource.data.mentorUid == request.auth.uid
+            || resource.data.menteeUid == request.auth.uid
+            || request.resource.data.menteeUid == request.auth.uid
+          ));
+      }
     }
   }
 }
