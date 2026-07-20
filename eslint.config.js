@@ -73,4 +73,15 @@ export default [
       'no-dupe-keys': 'off',
     },
   },
+  {
+    // Repositories use a dual-mode design (Firebase when useFirebase && db,
+    // localStorage fallback otherwise). Firestore imports (doc/setDoc/getDoc/query/
+    // where/getDocs/serverTimestamp/writeBatch) are required by the Firebase branch
+    // even when the local branch doesn't reference them. Flagging them as unused
+    // is noise that hides real issues, so no-unused-vars is off here by design.
+    files: ['src/repositories/**/*.js', 'src/db.js'],
+    rules: {
+      'no-unused-vars': 'off',
+    },
+  },
 ];

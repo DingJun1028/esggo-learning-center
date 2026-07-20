@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { BookOpen, Upload, PlayCircle, CalendarCheck, MessageCircleQuestion, Smile, Database, ShieldCheck, ArrowLeft, Send, ChevronDown, ChevronUp, FileText, Globe, Search, Download, Trash2, Filter, X, Users, LogIn, LogOut, User, UserPlus, UserMinus, Check, XCircle } from 'lucide-react';
+import { BookOpen, Upload, PlayCircle, CalendarCheck, MessageCircleQuestion, Smile, Database, ShieldCheck, ArrowLeft, Send, ChevronDown, ChevronUp, FileText, Globe, Search, Download, Trash2, Filter, X, Users, LogIn, LogOut, User, UserPlus, Check, XCircle } from 'lucide-react';
 import {
   useFirebase, initAuth, subscribeSubmissions, addSubmission, deleteSubmission,
-  uploadFiles, loadLocal, APP_ID, signInWithGoogle, signOut
+  uploadFiles, signInWithGoogle, signOut
 } from './db';
 import { getKnowledgeEntries, searchKnowledge } from './repositories/rag.repository';
 import { refreshRoleFromClaims, setupProfileIfMissing } from './repositories/auth.repository';
@@ -223,7 +223,6 @@ const ReplayListView = ({ t, videos, onSelect }) => {
       ) : (
         <div className="flex flex-col gap-3">
           {videos.map((v) => {
-            const isPlaceholder = !v.id || v.id.startsWith('REPLACE_');
             return (
               <button key={v.id || v.title} onClick={() => onSelect(v)} className="w-full text-left bg-white rounded-xl shadow-sm border border-slate-100 hover:border-[#FDB515] hover:shadow-md transition-all select-none">
                 <div className="px-4 py-3">
@@ -418,7 +417,6 @@ export default function App() {
   const [selectedVideo, setSelectedVideo] = useState(null);
   const [knowledgeEntries, setKnowledgeEntries] = useState([]);
   const [knowledgeQuery, setKnowledgeQuery] = useState('');
-  const [mentorView, setMentorView] = useState('list');
   const [authMessage, setAuthMessage] = useState('');
   // TA pairing state
   const [taPairings, setTaPairings] = useState([]);
