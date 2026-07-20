@@ -71,6 +71,8 @@ const DetailPanel = ({ t, item }) => {
       )}
       {item.type === 'question' && (
         <>
+          <Field label={t.detail.question.submitterName || '提問人姓名'} value={d.submitterName} />
+          <Field label={t.detail.question.submitterEmail || '提問人 Email'} value={d.submitterEmail} />
           <Field label={t.detail.question.role} value={d.role} />
           <Field label={t.detail.question.challenge} value={d.challenge} />
           <Field label={t.detail.question.mainQuestion} value={d.mainQuestion} />
@@ -368,6 +370,9 @@ const RecordsView = ({ data, isAdmin, t, lang }) => {
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <span className="bg-[#FDB515]/20 text-[#b47b00] px-2 py-0.5 rounded-md text-sm font-bold">{t.types[item.type]}</span>
                       {isAdmin && <span className="text-xs font-mono text-slate-400">{item.userId.slice(0, 8)}…</span>}
+                      {item.type === 'question' && item.data?.submitterName && (
+                        <span className="text-xs bg-slate-100 text-slate-700 px-2 py-0.5 rounded-md font-semibold">{item.data.submitterName}</span>
+                      )}
                     </div>
                     <div className="text-xs text-slate-500">{new Date(item.createdAt).toLocaleDateString()} {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
                   </div>

@@ -205,7 +205,7 @@ export const translations = {
     detail: {
       note: '備註', files: '附件', noFiles: '（無附件）', supplements: '補充檔案',
       booking: { name: '姓名', email: 'Email', time: '偏好時段', mode: '諮詢形式', topic: '想討論的主題' },
-      question: { role: '組織與角色', challenge: '主要挑戰摘要', mainQuestion: '最想請教師資的問題' },
+      question: { role: '組織與角色', challenge: '主要挑戰摘要', mainQuestion: '最想請教師資的問題', submitterName: '提問人姓名', submitterEmail: '提問人 Email' },
       survey: {
         week: '課程週次', date: '上課日期', theme: '本週主題', lecturer: '講師姓名',
         name: '學員姓名', org: '所屬組織', ratings: '評分', noRatings: '（無評分）', feedback: '回饋',
