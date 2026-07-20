@@ -18,6 +18,14 @@ npm run build
 
 改動 i18n 字串、元件行為、路由或 Firebase 對應時，尤其不可跳過。
 
+## Lint 約定
+
+- 專案已啟用 ESLint（flat config：`eslint.config.js`），script：`pnpm run lint` / `pnpm run lint:fix`。改碼後應跑 lint，目標 **0 errors / 0 warnings**。
+- **repositories 與 db.js 的 Firestore import 刻意保留**：`doc`/`setDoc`/`getDoc`/`query`/`where`/`getDocs`/`serverTimestamp`/`writeBatch` 在 local 降級模式用不到，但 Firebase 模式（`if (useFirebase && db)`）必須用到。因此 `eslint.config.js` 對 `src/repositories/**` + `src/db.js` 關閉 `no-unused-vars`——這是設計意圖，不是未清的死碼，勿擅刪這些 import（會讓 Firebase 部署炸）。
+- **i18n locale 表**（`src/i18n/`）各 locale 區塊（zh-TW / zh-CN）內部的同名 key 是正常結構（不同父物件），`no-dupe-keys` 對該目錄關閉以避誤報。真正的同區塊重複 key 屬獨立 i18n 清理任務。
+- **`no-empty` 允許空 catch**（如 `catch {}` 吞掉 `delete window[cbName]` 可能的錯誤），屬合理寫法。
+- 修程式碼問題優先於調 config：遇 `react-hooks/rules-of-hooks` 等 error 級問題，修碼而非關規則。
+
 ## 報告與步驟缺口約定
 
 - 執行任何有編號的驗證/流程（如 pre-commit review 的 Step 1–8）時，**每一個步驟編號都要交代**：被正確跳過的步驟（例如無失敗故跳過 auto-fix、無 linter 故跳過 lint）必須顯式標註「Step N：skipped（原因）」，不得讓編號從 N 直接跳到 N+2。
