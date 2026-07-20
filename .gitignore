@@ -29,6 +29,10 @@ functions/node_modules/
 functions/lib/
 functions/package-lock.json
 
+# ===== SSH / secrets files (never commit) =====
+*.pem
+scripts/oracle_vps_ssh_key.pem
+
 # ===== Hermes workspace runtime state (kept local) =====
 .hermes/
 .hermes-tmp/
