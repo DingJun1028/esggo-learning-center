@@ -616,7 +616,7 @@ export default function App() {
 
   const HomeView = () => (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 max-w-5xl mx-auto">
-      <a href="https://drive.google.com/drive/folders/1cyT_HDOo6nJQe3MOon0LKYMwOGDkMpzx?usp=sharing" target="_blank" rel="noreferrer"
+      <a href="https://drive.google.com/drive/folders/1-ZOC6sPNGISeD7Rf6lYT3Q10yYZaTdAy?usp=sharing" target="_blank" rel="noreferrer"
          className="bg-white p-5 sm:p-6 rounded-xl shadow-sm border border-slate-100 hover:shadow-md hover:border-[#FDB515] transition-all flex flex-col items-center justify-center gap-4 group cursor-pointer min-h-[130px] sm:min-h-[160px] tap-target">
         <div className="bg-slate-50 p-4 rounded-full text-[#003262] group-hover:bg-[#003262] group-hover:text-white transition-colors"><BookOpen size={32} /></div>
         <h3 className="text-lg font-bold text-[#003262]">{t.f1}</h3>
