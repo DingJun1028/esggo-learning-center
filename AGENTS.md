@@ -29,7 +29,7 @@ npm run build
 
 ## 這個 repo 的路徑與環境
 
-- 工作區在 `C:\Project\esggo-learning center`，含中文與空白；請在 tool call/script 中使用 POSIX/MSYS 風格路徑，例如 `/c/Project/esggo-learning center`。
+- 工作區在 `C:\\Project\\esggo-learning-center`（hyphen、無空白）；請在 tool call/script 中使用 POSIX/MSYS 風格路徑，例如 `/c/Project/esggo-learning-center`。
 - URL 與 Firebase config 以 `.env` 為唯一可信來源，勿在元件內硬編碼目標網址。
 - `.env` 不得讀入也不得出現在任何輸出中。
 
@@ -37,6 +37,19 @@ npm run build
 
 - 使用者在這個專案里要求繁體中文；閱讀、輸出、錯誤訊息、UI 文案均使用繁體中文。
 - 新增或修改字串時，請同步補上對應 i18n key，不要殘留未翻譯的硬編碼英文字串。
+
+## 已知 bug 狀態（2026-07-20 實查）
+
+以下曾列於開發者 memory 的「待修 5 個 runtime bug」經實際讀取 main 分支程式碼後確認**已全部修復**，勿重複修：
+
+- `pairing.repository.js` 缺 `getDoc` import → 已 import（第 10 行）且使用（第 65 行）。
+- `submission.repository.js` 缺 `emitTelemetry` import → 已 import（第 15 行）且使用（第 70 行）。
+- `App.jsx` 用 `s.timestamp` 而非 `createdAt` → 已改為防禦寫法 `(s.createdAt || s.timestamp)`（第 1011 行）。
+- `App.jsx` `setSubmissions` 未宣告 → 已宣告（第 402 行 `const [submissions, setSubmissions] = useState([])`）。
+- `AttachmentUploader` 缺 `t` prop → 元件定義於 App.jsx 內，2 個 call site（677、762 行）皆傳 `t={t}`。
+
+驗證基準：PR#3 合併後 `main` 分支 `npm run test` 8/8 通過、`npm run build` 成功（exit=0）。
+動手修任何「已知 bug」前，先以當前程式碼為準確認其仍存在，勿依賴過期 memory。
 
 ## 編輯與重構原則
 
