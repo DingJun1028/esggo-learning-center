@@ -15,14 +15,13 @@ const isSupabaseEnabled = () => Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
 
 let cachedClient = null;
 
-const loadSupabaseClient = () => {
+const loadSupabaseClient = async () => {
   if (!isSupabaseEnabled()) return null;
   if (cachedClient) return cachedClient;
 
   try {
-    // Use dynamic import so the app still bundles/runs without Supabase being configured.
-    // eslint-disable-next-line global-require
-    const { createClient } = require('@supabase/supabase-js');
+    // Dynamic import (ESM-compatible) so the app still bundles/runs without Supabase installed.
+    const { createClient } = await import('@supabase/supabase-js');
     cachedClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: false } });
     return cachedClient;
   } catch (error) {
@@ -32,7 +31,7 @@ const loadSupabaseClient = () => {
 };
 
 export const checkSupabaseHealth = async () => {
-  const client = loadSupabaseClient();
+  const client = await loadSupabaseClient();
   if (!client) {
     return { enabled: false, healthy: false, reason: 'SUPABASE_DISABLED' };
   }
@@ -53,7 +52,7 @@ export const checkSupabaseHealth = async () => {
 };
 
 export const fetchSupabaseSyncSummary = async () => {
-  const client = loadSupabaseClient();
+  const client = await loadSupabaseClient();
   if (!client) {
     return { enabled: false, healthy: false, reason: 'SUPABASE_DISABLED' };
   }

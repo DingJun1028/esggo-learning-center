@@ -1,11 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { BookOpen, Upload, PlayCircle, CalendarCheck, MessageCircleQuestion, Smile, Database, ShieldCheck, ArrowLeft, Send, ChevronDown, ChevronUp, FileText, Globe, Search, Download, Trash2, Filter, X, Users } from 'lucide-react';
+import { BookOpen, Upload, PlayCircle, CalendarCheck, MessageCircleQuestion, Smile, Database, ShieldCheck, ArrowLeft, Send, ChevronDown, ChevronUp, FileText, Globe, Search, Download, Trash2, Filter, X, Users, LogIn, LogOut, User, UserPlus, UserMinus, Check, XCircle } from 'lucide-react';
 import {
   useFirebase, initAuth, subscribeSubmissions, addSubmission, deleteSubmission,
   uploadFiles, loadLocal, APP_ID, signInWithGoogle, signOut
 } from './db';
 import { getKnowledgeEntries, searchKnowledge } from './repositories/rag.repository';
-import { refreshRoleFromClaims } from './repositories/auth.repository';
+import { refreshRoleFromClaims, setupProfileIfMissing } from './repositories/auth.repository';
+import { getUserProfile } from './repositories/profile.repository';
+import {
+  listPairingsForMentor, acceptPairing, declinePairing,
+  subscribePairings, createPairingRequest, removePairing, PAIRING_STATUS
+} from './repositories/pairing.repository';
 import translations from './i18n/translations';
 
 // --- 管理員密碼（輕量保護，見 docs/FIREBASE_SETUP.md 說明）---
@@ -166,6 +171,11 @@ const mockCases = [
 ];
 
 // 課程回放影片清單（自動化或備用，邏輯不變）
+// ── REPLAY_SYNC 設定說明 ──
+// 1. 依照 docs/REPLAY_AUTOMATION.md 建立 Google Apps Script Web App。
+// 2. 部署後取得 Web App URL（形如 https://script.google.com/macros/s/AKfy.../exec）。
+// 3. 將 WEB_APP_URL 填入下方，啟用後前端會透過 JSONP 向 Apps Script 拉取
+//    Google Drive 上的課程影片清單；若 URL 留空則退回 DEFAULT_REPLAY_VIDEOS。
 const REPLAY_SYNC = {
   ENABLED: true,
   WEB_APP_URL: '',
@@ -392,6 +402,15 @@ export default function App() {
   const [adminOk, setAdminOk] = useState(false);
   const [adminPrompt, setAdminPrompt] = useState(false);
   const [adminInput, setAdminInput] = useState('');
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const profileMenuRef = useRef(null);
+  // 點擊外部關閉個人選單
+  useEffect(() => {
+    if (!profileMenuOpen) return;
+    const handler = (e) => { if (profileMenuRef.current && !profileMenuRef.current.contains(e.target)) setProfileMenuOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [profileMenuOpen]);
   const [replayView, setReplayView] = useState('list');
   const [replayVideos, setReplayVideos] = useState(null);
   const [selectedVideo, setSelectedVideo] = useState(null);
@@ -399,6 +418,15 @@ export default function App() {
   const [knowledgeQuery, setKnowledgeQuery] = useState('');
   const [mentorView, setMentorView] = useState('list');
   const [authMessage, setAuthMessage] = useState('');
+  // TA pairing state
+  const [taPairings, setTaPairings] = useState([]);
+  const [taPairingsLoading, setTaPairingsLoading] = useState(false);
+  // Admin pairing state
+  const [allPairings, setAllPairings] = useState([]);
+  const [newPairingMentor, setNewPairingMentor] = useState('');
+  const [newPairingMentee, setNewPairingMentee] = useState('');
+  const [profileSetup, setProfileSetup] = useState(false);
+  const [profileForm, setProfileForm] = useState({ displayName: '', email: '', org: '' });
   const t = translations[lang];
 
   // Auth
@@ -439,6 +467,20 @@ export default function App() {
     try {
       await signInWithGoogle();
       setAuthMessage(t.auth.signInSuccess || '登入成功');
+      // Check if profile exists; if not, show profile setup modal
+      const auth = await import('firebase/auth').then(m => m.getAuth());
+      const currentUser = auth.currentUser;
+      if (currentUser) {
+        const existing = await getUserProfile(currentUser.uid);
+        if (!existing) {
+          setProfileForm({
+            displayName: currentUser.displayName || '',
+            email: currentUser.email || '',
+            org: '',
+          });
+          setProfileSetup(true);
+        }
+      }
     } catch (err) {
       console.error(err);
       setAuthMessage(t.auth.signInFailed || '登入失敗，請稍後再試。');
@@ -447,6 +489,8 @@ export default function App() {
 
   const handleSignOut = async () => {
     await signOut();
+    setRole('student');
+    setAdminOk(false);
     setAuthMessage('');
     setView('home');
   };
@@ -470,18 +514,40 @@ export default function App() {
     setKnowledgeEntries(results);
   };
 
-  // 角色切換（含管理員輕量密碼保護）
-  const trySwitchRole = (next) => {
+  // 角色切換（基於 Firebase claims；admin/TA 需要 Google 登入後的 claims 驗證，密碼作為 fallback）
+  const trySwitchRole = async (next) => {
+    if (next === 'student') {
+      setRole('student'); setView('home');
+      return;
+    }
+    // 已有 Google 帳號且 claims 已驗證，直接切換
+    if (user && !user.isLocal && !user.isAnonymous) {
+      const claimsRole = await refreshRoleFromClaims(user);
+      if ((next === 'admin' && claimsRole === 'admin') || (next === 'TA' && (claimsRole === 'TA' || claimsRole === 'admin'))) {
+        setRole(next);
+        setView(next === 'admin' ? 'admin' : 'ta');
+        return;
+      }
+      // Claims 不匹配，提示用戶無權限或降回密碼
+      if (next === 'admin') {
+        if (adminOk) { setRole('admin'); setView('admin'); return; }
+        setAdminPrompt(true);
+        return;
+      }
+      alert(t.auth?.noPermission || '您的帳號無此權限，請聯繫管理員。');
+      return;
+    }
+    // 尚未用 Google 登入，先嘗試密碼（admin）或提示登入
     if (next === 'admin') {
       if (adminOk) { setRole('admin'); setView('admin'); return; }
       setAdminPrompt(true);
       return;
     }
-    setRole('student'); setView('home');
+    alert(t.auth?.signInRequired || '請先使用 Google 登入');
   };
   const confirmAdmin = () => {
     if (!ADMIN_PASS || adminInput === ADMIN_PASS) { setAdminOk(true); setRole('admin'); setView('admin'); }
-    else alert(t.auth.adminWrongPassword);
+    else alert(t.admin?.wrongPassword || t.error?.adminWrongPassword || '管理員密碼錯誤');
     setAdminPrompt(false); setAdminInput('');
   };
 
@@ -763,6 +829,48 @@ export default function App() {
               </button>
             </>
           )}
+
+          {/* 用戶登入/登出狀態 */}
+          <div className="relative" ref={profileMenuRef}>
+            {user && !user.isLocal && !user.isAnonymous ? (
+              <button
+                onClick={() => setProfileMenuOpen(!profileMenuOpen)}
+                className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-[#003262] px-3 py-2 rounded-lg text-sm font-semibold transition-colors"
+                title={user.email || user.displayName || ''}
+              >
+                {user.photoURL ? (
+                  <img src={user.photoURL} alt="" className="w-6 h-6 rounded-full" referrerPolicy="no-referrer" />
+                ) : (
+                  <User size={16} />
+                )}
+                <span className="hidden sm:inline max-w-[100px] truncate">{user.displayName || user.email?.split('@')[0] || ''}</span>
+                <ChevronDown size={14} />
+              </button>
+            ) : (
+              <button
+                onClick={handleGoogleSignIn}
+                className="flex items-center gap-2 bg-[#003262] text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-[#002244] transition-colors shadow-sm"
+              >
+                <LogIn size={16} /> <span className="hidden sm:inline">{t.auth?.signInGoogle || 'Google 登入'}</span>
+              </button>
+            )}
+            {/* 個人選單下拉 */}
+            {profileMenuOpen && user && !user.isLocal && !user.isAnonymous && (
+              <div className="absolute right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg w-56 z-[60] overflow-hidden" onClick={() => setProfileMenuOpen(false)}>
+                <div className="px-4 py-3 border-b border-slate-100">
+                  <div className="text-sm font-bold text-[#003262] truncate">{user.displayName || ''}</div>
+                  <div className="text-xs text-slate-400 truncate">{user.email || ''}</div>
+                  <div className="mt-1 text-[10px] font-semibold text-[#b47b00] bg-[#FDB515]/15 inline-block px-2 py-0.5 rounded">{t[`role${role === 'admin' ? 'Admin' : role === 'TA' ? 'TA' : 'Student'}`] || role}</div>
+                </div>
+                <button
+                  onClick={async () => { await handleSignOut(); setProfileMenuOpen(false); }}
+                  className="w-full px-4 py-3 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors"
+                >
+                  <LogOut size={16} /> {t.auth?.signOut || '登出'}
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </nav>
 
@@ -871,17 +979,71 @@ export default function App() {
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[100] p-4" onClick={() => setAdminPrompt(false)}>
           <div className="bg-white rounded-xl p-6 w-full max-w-sm shadow-xl" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-[#003262] flex items-center gap-2"><ShieldCheck size={18} /> {t.adminLoginTitle}</h3>
+              <h3 className="font-bold text-[#003262] flex items-center gap-2"><ShieldCheck size={18} /> {t.admin?.loginTitle || '管理員登入'}</h3>
               <button onClick={() => setAdminPrompt(false)} className="text-slate-400 hover:text-slate-600"><X size={18} /></button>
             </div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1">{t.adminPassLabel}</label>
+            <label className="block text-sm font-semibold text-slate-700 mb-1">{t.admin?.passLabel || t.adminPassLabel || '管理員密碼'}</label>
             <input type="password" value={adminInput} onChange={e => setAdminInput(e.target.value)} autoFocus
               className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-[#003262] outline-none mb-4"
               onKeyDown={e => { if (e.key === 'Enter') confirmAdmin(); }} />
             <div className="flex gap-2">
-              <button onClick={confirmAdmin} className="flex-1 bg-[#003262] text-white font-bold py-2.5 rounded-lg hover:bg-[#002244]">{t.adminConfirm}</button>
-              <button onClick={() => setAdminPrompt(false)} className="flex-1 bg-slate-100 text-slate-600 font-bold py-2.5 rounded-lg hover:bg-slate-200">{t.adminCancel}</button>
+              <button onClick={confirmAdmin} className="flex-1 bg-[#003262] text-white font-bold py-2.5 rounded-lg hover:bg-[#002244]">{t.admin?.confirm || '進入'}</button>
+              <button onClick={() => setAdminPrompt(false)} className="flex-1 bg-slate-100 text-slate-600 font-bold py-2.5 rounded-lg hover:bg-slate-200">{t.admin?.cancel || '取消'}</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Profile setup modal — shown after first Google sign-in when profile is missing */}
+      {profileSetup && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[100] p-4" onClick={() => setProfileSetup(false)}>
+          <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-[#003262] flex items-center gap-2"><User size={18} /> {t.auth?.profileTitle || '個人資料'}</h3>
+              <button onClick={() => setProfileSetup(false)} className="text-slate-400 hover:text-slate-600"><X size={18} /></button>
+            </div>
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              try {
+                await setupProfileIfMissing({
+                  ...user,
+                  displayName: profileForm.displayName,
+                  email: profileForm.email,
+                });
+                // Also save org via upsert
+                const { upsertUserProfile } = await import('./repositories/profile.repository');
+                await upsertUserProfile(user.uid, {
+                  displayName: profileForm.displayName,
+                  email: profileForm.email,
+                  org: profileForm.org,
+                });
+                setProfileSetup(false);
+              } catch (err) {
+                console.error('Profile setup error:', err);
+              }
+            }} className="flex flex-col gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">{t.auth?.displayName || '顯示名稱'}</label>
+                <input type="text" required value={profileForm.displayName}
+                  onChange={e => setProfileForm(prev => ({ ...prev, displayName: e.target.value }))}
+                  className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-[#003262] outline-none" />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">{t.auth?.email || 'Email'}</label>
+                <input type="email" required value={profileForm.email}
+                  onChange={e => setProfileForm(prev => ({ ...prev, email: e.target.value }))}
+                  className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-[#003262] outline-none" />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">{t.auth?.org || '組織'}</label>
+                <input type="text" value={profileForm.org}
+                  onChange={e => setProfileForm(prev => ({ ...prev, org: e.target.value }))}
+                  className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-[#003262] outline-none" />
+              </div>
+              <button type="submit" className="mt-2 bg-[#003262] text-white font-bold py-3 rounded-lg hover:bg-[#002244] transition-colors">
+                {t.auth?.saveAndContinue || '儲存並繼續'}
+              </button>
+            </form>
           </div>
         </div>
       )}
