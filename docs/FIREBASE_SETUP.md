@@ -65,6 +65,26 @@ VITE_ADMIN_PASS=你的管理員密碼
 
 ---
 
+## 三之一、啟用 Google 登入（OAuth）
+
+若需要讓學員用 Google 帳號登入（取代或搭配匿名登入）：
+
+1. 在 Firebase Console → **Authentication → Sign-in method** → 點選 **Google** → 啟用。
+2. 設定「專案支援信箱」（通常選你自己的 Gmail）。
+3. 儲存後，前往 [GCP Console → APIs & Services → OAuth 同意畫面](https://console.cloud.google.com/apis/credentials/consent)：
+   - 確認已設定 App 名稱、Support email。
+   - **Authorized domains**：加入將要部署的網域（如 `your-app.web.app`）。
+4. 回到 GCP Console → **Credentials** → 找到自動建立的 **Web client** OAuth 2.0 用戶端 ID，複製它。
+5. 將該 Client ID 填入 `.env`：
+   ```
+   VITE_GOOGLE_OAUTH_CLIENT_ID=123456789-xxxxxxxx.apps.googleusercontent.com
+   ```
+6. 重新啟動開發伺服器（`npm run dev`），Google 登入按鈕即會出現。
+
+> 💡 若只需匿名登入，可跳過此步驟；Google 登入為選配功能。
+
+---
+
 ## 四、套用 Firestore 安全規則
 
 本倉庫已附規則檔：`firestore.rules`、`firebase.json`（**已移除 storage 區塊**）。

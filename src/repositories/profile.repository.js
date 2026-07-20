@@ -1,5 +1,5 @@
 import { doc, setDoc, getDoc } from 'firebase/firestore';
-import { useFirebase, APP_ID, emitTelemetry } from '../db';
+import { db, useFirebase, APP_ID, emitTelemetry } from '../db';
 
 const profileRef = (uid) => doc(db, 'platforms', APP_ID, 'profiles', uid);
 const profileLocalStorageKey = (uid) => `berkeley_profile_${APP_ID}_${uid}`;
