@@ -1,5 +1,15 @@
 {
   "projects": {
     "default": "esg-sunshine"
-  }
+  },
+  "targets": {
+    "esg-sunshine": {
+      "hosting": {
+        "esg-sunshine": [
+          "esg-sunshine"
+        ]
+      }
+    }
+  },
+  "etags": {}
 }
