@@ -24,6 +24,11 @@ dist-ssr/
 
 firebase-debug.log
 
+# ===== Functions directory =====
+functions/node_modules/
+functions/lib/
+functions/package-lock.json
+
 # ===== Hermes workspace runtime state (kept local) =====
 .hermes/
 .hermes-tmp/

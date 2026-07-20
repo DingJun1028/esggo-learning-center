@@ -15,6 +15,8 @@ import translations from './i18n/translations';
 
 // --- 管理員密碼（輕量保護，見 docs/FIREBASE_SETUP.md 說明）---
 const ADMIN_PASS = import.meta.env.VITE_ADMIN_PASS || '';
+// 管理員 Firebase UID：以此 UID 登入 Google 者自動取得 admin 角色（比純密碼更穩）
+const ADMIN_UID = import.meta.env.VITE_ADMIN_UID || '';
 // 附件內嵌進 Firestore（不使用 Cloud Storage，維持 Spark 免費層）。
 // Firestore 單文件上限 1MB，base64 會膨脹約 1/3，故總量保守限制 700KB，
 // 單檔上限 5MB（防止一次丟進過大檔案卻在寫入時才炸）。
@@ -556,6 +558,10 @@ export default function App() {
     if (next === 'student') {
       setRole('student'); setView('home');
       return;
+    }
+    // 管理員 UID 直接授權（Google 登入後，無需密碼或 claims）
+    if (next === 'admin' && user && !user.isLocal && !user.isAnonymous && user.uid === ADMIN_UID) {
+      setRole('admin'); setView('admin'); return;
     }
     // 已有 Google 帳號且 claims 已驗證，直接切換
     if (user && !user.isLocal && !user.isAnonymous) {
