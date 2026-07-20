@@ -1,0 +1,13 @@
+{
+  "name": "esggo-admin-rbac",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "lint": "echo 'no local lint configured'",
+    "build": "echo 'no local build configured'"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.6.0",
+    "firebase-functions": "^5.4.0"
+  }
+}

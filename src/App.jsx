@@ -1,9 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { BookOpen, Upload, PlayCircle, CalendarCheck, MessageCircleQuestion, Smile, Database, ShieldCheck, ArrowLeft, Send, ChevronDown, ChevronUp, FileText, Globe, Search, Download, Trash2, Filter, X } from 'lucide-react';
+import { BookOpen, Upload, PlayCircle, CalendarCheck, MessageCircleQuestion, Smile, Database, ShieldCheck, ArrowLeft, Send, ChevronDown, ChevronUp, FileText, Globe, Search, Download, Trash2, Filter, X, Users } from 'lucide-react';
 import {
   useFirebase, initAuth, subscribeSubmissions, addSubmission, deleteSubmission,
-  uploadFiles, loadLocal, APP_ID
+  uploadFiles, loadLocal, APP_ID, signInWithGoogle, signOut
 } from './db';
+import { getKnowledgeEntries, searchKnowledge } from './repositories/rag.repository';
+import { refreshRoleFromClaims } from './repositories/auth.repository';
+import translations from './i18n/translations';
 
 // --- 管理員密碼（輕量保護，見 docs/FIREBASE_SETUP.md 說明）---
 const ADMIN_PASS = import.meta.env.VITE_ADMIN_PASS || '';
@@ -23,7 +26,7 @@ const renderFiles = (files) => (
            className="flex items-center gap-2 text-[#003262] hover:underline text-xs bg-slate-50 border border-slate-200 rounded p-2">
           <FileText size={14} className="shrink-0" />
           <span className="truncate font-medium">{f.name}</span>
-          <span className="text-slate-400 ml-auto whitespace-nowrap">{f.size ? `${(f.size / 1024).toFixed(0)} KB ↓` : '↓'}</span>
+          <span className="text-slate-400 ml-auto whitespace-nowrap">{t.common.attachmentSizeLabel || ''}{(f.size ? ` ${(f.size / 1024).toFixed(0)} KB ↓` : '↓')}</span>
         </a>
       );
     })}
@@ -31,7 +34,7 @@ const renderFiles = (files) => (
 );
 
 // 類型化明細：根據 type 顯示有意義的欄位（而非裸 JSON）
-const DetailPanel = ({ item }) => {
+const DetailPanel = ({ t, item }) => {
   const d = item.data || {};
   const atts = d.attachments || [];
   const Field = ({ label, value }) =>
@@ -46,46 +49,47 @@ const DetailPanel = ({ item }) => {
     <div className="text-sm">
       {item.type === 'upload' && (
         <>
-          <Field label="作業備註" value={d.desc} />
-          {atts.length > 0 && (<><div className="text-xs font-bold text-slate-400 mb-0.5">附件</div>{renderFiles(atts)}</>)}
-          {atts.length === 0 && <div className="text-xs text-slate-400">（無附件）</div>}
+          <Field label={t.detail.note} value={d.desc} />
+          {atts.length > 0 && (<><div className="text-xs font-bold text-slate-400 mb-0.5">{t.detail.files}</div>{renderFiles(atts)}</>)}
+          {atts.length === 0 && <div className="text-xs text-slate-400">{t.detail.noFiles}</div>}
         </>
       )}
       {item.type === 'booking' && (
         <>
-          <Field label="預約日期" value={d.date} />
-          <Field label="預約時段" value={d.time} />
-          <Field label="諮詢主題" value={d.topic} />
+          <Field label={t.detail.booking.name} value={d.name} />
+          <Field label={t.detail.booking.email} value={d.email} />
+          <Field label={t.detail.booking.time} value={d.time} />
+          <Field label={t.detail.booking.topic} value={d.topic} />
         </>
       )}
       {item.type === 'question' && (
         <>
-          <Field label="組織與角色" value={d.role} />
-          <Field label="主要挑戰摘要" value={d.challenge} />
-          <Field label="最想請教師資的問題" value={d.mainQuestion} />
-          {atts.length > 0 && (<><div className="text-xs font-bold text-slate-400 mb-0.5">補充檔案</div>{renderFiles(atts)}</>)}
+          <Field label={t.detail.question.role} value={d.role} />
+          <Field label={t.detail.question.challenge} value={d.challenge} />
+          <Field label={t.detail.question.mainQuestion} value={d.mainQuestion} />
+          {atts.length > 0 && (<><div className="text-xs font-bold text-slate-400 mb-0.5">{t.detail.supplements}</div>{renderFiles(atts)}</>)}
         </>
       )}
       {item.type === 'survey' && (
         <>
-          <Field label="課程週次" value={d.meta?.week} />
-          <Field label="上課日期" value={d.meta?.date} />
-          <Field label="本週主題" value={d.meta?.theme} />
-          <Field label="講師姓名" value={d.meta?.lecturer} />
-          <Field label="學員姓名" value={d.meta?.name} />
-          <Field label="所屬組織" value={d.meta?.org} />
-          <div className="text-xs font-bold text-slate-400 mb-1">評分（1–5）</div>
+          <Field label={t.detail.survey.week} value={d.meta?.week} />
+          <Field label={t.detail.survey.date} value={d.meta?.date} />
+          <Field label={t.detail.survey.theme} value={d.meta?.theme} />
+          <Field label={t.detail.survey.lecturer} value={d.meta?.lecturer} />
+          <Field label={t.detail.survey.name} value={d.meta?.name} />
+          <Field label={t.detail.survey.org} value={d.meta?.org} />
+          <div className="text-xs font-bold text-slate-400 mb-1">{t.detail.survey.ratings}</div>
           {d.ratings && Object.keys(d.ratings).length > 0 ? (
             <div className="flex flex-wrap gap-2 mb-3">
               {Object.entries(d.ratings).map(([q, v]) => (
                 <span key={q} className="text-xs bg-[#FDB515]/15 text-[#b47b00] px-2 py-1 rounded font-mono">Q:{q.slice(-1)} = {v}</span>
               ))}
             </div>
-          ) : <div className="text-xs text-slate-400 mb-2">（無評分）</div>}
-          <Field label="回饋 1" value={d.open?.open_1} />
-          <Field label="回饋 2" value={d.open?.open_2} />
-          <Field label="回饋 3" value={d.open?.open_3} />
-          {atts.length > 0 && (<><div className="text-xs font-bold text-slate-400 mb-0.5">補充檔案</div>{renderFiles(atts)}</>)}
+          ) : <div className="text-xs text-slate-400 mb-2">{t.detail.survey.noRatings}</div>}
+          <Field label={t.detail.survey.feedback + ' 1'} value={d.open?.open_1} />
+          <Field label={t.detail.survey.feedback + ' 2'} value={d.open?.open_2} />
+          <Field label={t.detail.survey.feedback + ' 3'} value={d.open?.open_3} />
+          {atts.length > 0 && (<><div className="text-xs font-bold text-slate-400 mb-0.5">{t.detail.supplements}</div>{renderFiles(atts)}</>)}
         </>
       )}
     </div>
@@ -98,9 +102,9 @@ const AttachmentUploader = ({ value = [], onChange }) => {
   const handleFiles = (fileList) => {
     const files = Array.from(fileList);
     const tooBig = files.some(f => f.size > MAX_FILE_BYTES);
-    if (tooBig) { setError('單檔超過 5MB，請改用較小的檔案。'); return; }
+    if (tooBig) { setError(t.common.attachmentTooBig); return; }
     const total = (value || []).reduce((s, f) => s + (f.size || 0), 0) + files.reduce((s, f) => s + (f.size || 0), 0);
-    if (total > MAX_TOTAL_BYTES) { setError('附件總量超過 700KB（受 Firestore 單文件 1MB 限制），請減少或壓縮檔案。'); return; }
+    if (total > MAX_TOTAL_BYTES) { setError(t.common.attachmentTotalTooBig); return; }
     setError('');
     onChange([...(value || []), ...files]);
   };
@@ -123,72 +127,6 @@ const AttachmentUploader = ({ value = [], onChange }) => {
       )}
     </div>
   );
-};
-
-const translations = {
-  'zh-TW': {
-    heroTitle: '2026 柏克萊國際人才培育課程 學習中心',
-    f1: '學員資源區', f2: '作業上傳', f3: '課程回放', f4: '諮詢預約', f5: '提問提交', f6: '滿意調查',
-    records: '用戶資源庫', admin: '管理後台', myRecords: '我的紀錄',
-    roleStudent: '🧑‍🎓 學員視角', roleAdmin: '🛡️ 管理員視角',
-    back: '返回首頁', submit: '送出提交', saving: '儲存中...', success: '提交成功！',
-    footer: '2026 Berkeley ESG Strategy & Innovation Program',
-    adminLoginTitle: '管理員登入', adminPassLabel: '管理員密碼', adminConfirm: '進入', adminCancel: '取消',
-    list: {
-      search: '搜尋（學員ID / 內容關鍵字）', all: '全部類型', type: '類型', from: '起', to: '迄',
-      filters: '篩選', reset: '重設', export: '匯出 CSV', delete: '刪除', collapse: '收合', expand: '展開',
-      noResults: '沒有符合條件的紀錄', count: '共 {n} 筆', confirmDelete: '確定要刪除這筆紀錄嗎？',
-      storageMode: 'Firestore 雲端永久儲存', localMode: '本機暫存模式（未連接 Firebase）'
-    },
-    forms: {
-      upload: { title: '作業上傳', file: '選擇檔案', desc: '作業備註說明 (選填)' },
-      booking: { title: '諮詢預約', date: '預約日期', time: '預約時段', topic: '諮詢主題' }
-    },
-    table: { type: '類型', date: '提交時間', details: '內容細節', user: '用戶ID' },
-    types: { upload: '作業', booking: '預約', question: '提問', survey: '問卷' }
-  },
-  'zh-CN': {
-    heroTitle: '2026 柏克莱国际人才培育课程 学习中心',
-    f1: '学员资源区', f2: '作业上传', f3: '课程回放', f4: '咨询预约', f5: '提问提交', f6: '满意调查',
-    records: '用户资源库', admin: '管理后台', myRecords: '我的纪录',
-    roleStudent: '🧑‍🎓 学员视角', roleAdmin: '🛡️ 管理员视角',
-    back: '返回首页', submit: '提交', saving: '保存中...', success: '提交成功！',
-    footer: '2026 Berkeley ESG Strategy & Innovation Program',
-    adminLoginTitle: '管理员登录', adminPassLabel: '管理员密码', adminConfirm: '进入', adminCancel: '取消',
-    list: {
-      search: '搜索（学员ID / 内容关键字）', all: '全部类型', type: '类型', from: '起', to: '迄',
-      filters: '筛选', reset: '重设', export: '导出 CSV', delete: '删除', collapse: '收合', expand: '展开',
-      noResults: '没有符合条件的纪录', count: '共 {n} 笔', confirmDelete: '确定要删除这笔纪录吗？',
-      storageMode: 'Firestore 云端永久存储', localMode: '本机暂存模式（未连接 Firebase）'
-    },
-    forms: {
-      upload: { title: '作业上传', file: '选择文件', desc: '备注说明 (选填)' },
-      booking: { title: '咨询预约', date: '预约日期', time: '预约时段', topic: '咨询主题' }
-    },
-    table: { type: '类型', date: '提交时间', details: '内容细节', user: '用户ID' },
-    types: { upload: '作业', booking: '预约', question: '提问', survey: '问卷' }
-  },
-  'en': {
-    heroTitle: '2026 Berkeley International Talent Training Center',
-    f1: 'Student Resources', f2: 'Assignment Upload', f3: 'Course Replay', f4: 'Consulting Booking', f5: 'Submit Question', f6: 'Satisfaction Survey',
-    records: 'User Resources', admin: 'Admin Dashboard', myRecords: 'My Records',
-    roleStudent: '🧑‍🎓 Student View', roleAdmin: '🛡️ Admin View',
-    back: 'Back to Home', submit: 'Submit', saving: 'Saving...', success: 'Submitted successfully!',
-    footer: '2026 Berkeley ESG Strategy & Innovation Program',
-    adminLoginTitle: 'Admin Login', adminPassLabel: 'Admin Password', adminConfirm: 'Enter', adminCancel: 'Cancel',
-    list: {
-      search: 'Search (user ID / keyword)', all: 'All Types', type: 'Type', from: 'From', to: 'To',
-      filters: 'Filters', reset: 'Reset', export: 'Export CSV', delete: 'Delete', collapse: 'Collapse', expand: 'Expand',
-      noResults: 'No records match', count: 'Total {n}', confirmDelete: 'Delete this record?',
-      storageMode: 'Firestore cloud storage', localMode: 'Local fallback (Firebase not connected)'
-    },
-    forms: {
-      upload: { title: 'Assignment Upload', file: 'Select file(s)', desc: 'Description (optional)' },
-      booking: { title: 'Consulting Booking', date: 'Date', time: 'Time Slot', topic: 'Topic' }
-    },
-    table: { type: 'Type', date: 'Date', details: 'Details', user: 'User ID' },
-    types: { upload: 'Assignment', booking: 'Booking', question: 'Question', survey: 'Survey' }
-  }
 };
 
 // 滿意度調查表結構
@@ -263,47 +201,63 @@ const fetchReplayVideos = (onData) => {
   return () => { clearTimeout(timer); cleanup(); };
 };
 
-const ReplayView = ({ t }) => {
-  const [videos, setVideos] = useState(null);
-  const cleanupRef = useRef(null);
-  useEffect(() => { cleanupRef.current = fetchReplayVideos(setVideos); return () => { if (cleanupRef.current) cleanupRef.current(); }; }, []);
+const ReplayListView = ({ t, videos, onSelect }) => {
   const hasVideos = Array.isArray(videos) && videos.length > 0;
   return (
-    <div className="max-w-4xl mx-auto" onContextMenu={(e) => e.preventDefault()}>
+    <div className="max-w-4xl mx-auto">
       <h2 className="text-xl sm:text-2xl font-bold text-[#003262] mb-4 sm:mb-6 flex items-center gap-3"><PlayCircle className="text-[#FDB515]" /> {t.f3}</h2>
-      {videos === null ? (
-        <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-10 text-center text-slate-400">正在載入課程回放…</div>
-      ) : !hasVideos ? (
-        <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-10 text-center text-slate-500">尚無可觀看影片</div>
+      {!hasVideos ? (
+        <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-10 text-center text-slate-500">{t.replay.empty}</div>
       ) : (
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-3">
           {videos.map((v) => {
             const isPlaceholder = !v.id || v.id.startsWith('REPLACE_');
             return (
-              <section key={v.id || v.title} className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden select-none">
-                <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 bg-slate-50">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2 mb-0.5">
-                      <span className="text-xs font-bold text-[#b47b00] bg-[#FDB515]/20 px-2 py-0.5 rounded">{v.week}</span>
-                      <span className="text-xs text-slate-400">上傳於 {v.date}</span>
-                    </div>
-                    <h3 className="text-sm sm:text-base font-bold text-[#003262] truncate">{v.title}</h3>
+              <button key={v.id || v.title} onClick={() => onSelect(v)} className="w-full text-left bg-white rounded-xl shadow-sm border border-slate-100 hover:border-[#FDB515] hover:shadow-md transition-all select-none">
+                <div className="px-4 py-3">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-xs font-bold text-[#b47b00] bg-[#FDB515]/20 px-2 py-0.5 rounded">{v.week}</span>
+                    <span className="text-xs text-slate-400">{t.common.uploadedOn} {v.date}</span>
                   </div>
+                  <h3 className="text-sm sm:text-base font-bold text-[#003262] truncate">{v.title}</h3>
                 </div>
-                <div className="relative bg-black">
-                  {isPlaceholder ? (
-                    <div className="aspect-video flex items-center justify-center text-slate-400 text-sm px-4 text-center">影片待上傳（請管理員在 Drive 資料夾上傳影片，系統會自動抓出 ID）</div>
-                  ) : (
-                    <iframe src={`https://drive.google.com/file/d/${v.id}/preview`} className="w-full aspect-video" allow="autoplay" title={v.title} />
-                  )}
-                  <div className="absolute bottom-2 right-3 text-white/60 text-xs pointer-events-none select-none">ESG 學習中心 · 僅供線上觀看</div>
-                </div>
-              </section>
+              </button>
             );
           })}
         </div>
       )}
-      <p className="mt-6 text-xs text-slate-400 leading-relaxed">本課程影片僅供 enrolled 學員線上觀看，請勿錄影、翻拍或外流。</p>
+      <p className="mt-4 text-xs text-slate-400 leading-relaxed">{t.common.replayCopyright}</p>
+    </div>
+  );
+};
+
+const ReplayPlayerView = ({ t, video, onBack }) => {
+  const isPlaceholder = !video?.id || video?.id?.startsWith('REPLACE_');
+  return (
+    <div className="max-w-4xl mx-auto" onContextMenu={(e) => e.preventDefault()}>
+      <div className="flex items-center gap-3 mb-4 sm:mb-6">
+        <button onClick={onBack} className="inline-flex items-center gap-1 text-sm font-bold text-slate-600 bg-slate-100 px-3 py-1.5 rounded-md hover:bg-slate-200 transition-colors">
+          <PlayCircle size={16} /> {t.replay.backToList}
+        </button>
+      </div>
+      <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden select-none">
+        <div className="px-4 py-3 border-b border-slate-100 bg-slate-50">
+          <div className="flex items-center gap-2 mb-0.5">
+            <span className="text-xs font-bold text-[#b47b00] bg-[#FDB515]/20 px-2 py-0.5 rounded">{video?.week}</span>
+            <span className="text-xs text-slate-400">{t.common.uploadedOn} {video?.date}</span>
+          </div>
+          <h3 className="text-sm sm:text-base font-bold text-[#003262] truncate">{video?.title}</h3>
+        </div>
+        <div className="relative bg-black">
+          {isPlaceholder ? (
+            <div className="aspect-video flex items-center justify-center text-slate-400 text-sm px-4 text-center">{t.common.randomIdHint}</div>
+          ) : (
+            <iframe src={`https://drive.google.com/file/d/${video.id}/preview`} className="w-full aspect-video" allow="autoplay" title={video.title} />
+          )}
+          <div className="absolute bottom-2 right-3 text-white/60 text-xs pointer-events-none select-none">{t.replay.watermark}</div>
+        </div>
+      </div>
+      <p className="mt-4 text-xs text-slate-400 leading-relaxed">{t.common.replayCopyright}</p>
     </div>
   );
 };
@@ -411,7 +365,7 @@ const RecordsView = ({ data, isAdmin, t, lang }) => {
                 {open && (
                   <div className="px-4 pb-4 border-t border-slate-100 bg-slate-50/50">
                     <div className="py-3">{isAdmin && <div className="text-xs font-mono text-slate-400 mb-2">ID: {item.id} · {item.userId}</div>}</div>
-                    <DetailPanel item={item} />
+                    <DetailPanel t={t} item={item} />
                     {isAdmin && (
                       <button onClick={() => { if (confirm(t.list.confirmDelete)) deleteSubmission(item.id); }}
                         className="mt-3 flex items-center gap-1 text-xs text-red-500 hover:text-red-700">
@@ -438,11 +392,22 @@ export default function App() {
   const [adminOk, setAdminOk] = useState(false);
   const [adminPrompt, setAdminPrompt] = useState(false);
   const [adminInput, setAdminInput] = useState('');
+  const [replayView, setReplayView] = useState('list');
+  const [replayVideos, setReplayVideos] = useState(null);
+  const [selectedVideo, setSelectedVideo] = useState(null);
+  const [knowledgeEntries, setKnowledgeEntries] = useState([]);
+  const [knowledgeQuery, setKnowledgeQuery] = useState('');
+  const [mentorView, setMentorView] = useState('list');
+  const [authMessage, setAuthMessage] = useState('');
   const t = translations[lang];
 
   // Auth
   useEffect(() => {
-    const unsub = initAuth((u) => setUser(u));
+    const unsub = initAuth((u) => {
+      setUser(u);
+      if (!u) return;
+      refreshRoleFromClaims(u).then((r) => setRole(r));
+    });
     return () => { if (unsub) unsub(); };
   }, []);
 
@@ -452,6 +417,58 @@ export default function App() {
     const unsub = subscribeSubmissions(user.uid, setSubmissions);
     return () => { if (unsub) unsub(); };
   }, [user]);
+
+  // Replay：進入 replay 時重載影片，並回到列表
+  useEffect(() => {
+    if (view !== 'replay') return;
+    let cleanup;
+    setReplayView('list');
+    setSelectedVideo(null);
+    cleanup = fetchReplayVideos(setReplayVideos);
+    return () => { if (cleanup) cleanup(); };
+  }, [view]);
+
+  // 登入/登出
+  useEffect(() => {
+    if (view !== 'auth') return;
+    setAuthMessage('');
+    return () => {};
+  }, [view]);
+
+  const handleGoogleSignIn = async () => {
+    try {
+      await signInWithGoogle();
+      setAuthMessage(t.auth.signInSuccess || '登入成功');
+    } catch (err) {
+      console.error(err);
+      setAuthMessage(t.auth.signInFailed || '登入失敗，請稍後再試。');
+    }
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    setAuthMessage('');
+    setView('home');
+  };
+
+  // OmniData 知識庫
+  useEffect(() => {
+    if (view !== 'knowledge') return;
+    let cancelled = false;
+    setKnowledgeQuery('');
+
+    const load = async () => {
+      const entries = await getKnowledgeEntries(role);
+      if (!cancelled) setKnowledgeEntries(entries);
+    };
+    load();
+    return () => { cancelled = true; };
+  }, [view, role]);
+
+  const handleKnowledgeSearch = async () => {
+    const results = await searchKnowledge(knowledgeQuery, role);
+    setKnowledgeEntries(results);
+  };
 
   // 角色切換（含管理員輕量密碼保護）
   const trySwitchRole = (next) => {
@@ -464,7 +481,7 @@ export default function App() {
   };
   const confirmAdmin = () => {
     if (!ADMIN_PASS || adminInput === ADMIN_PASS) { setAdminOk(true); setRole('admin'); setView('admin'); }
-    else alert('管理員密碼錯誤');
+    else alert(t.auth.adminWrongPassword);
     setAdminPrompt(false); setAdminInput('');
   };
 
@@ -484,7 +501,7 @@ export default function App() {
       setView(role === 'admin' ? 'admin' : 'records');
     } catch (err) {
       console.error(err);
-      alert('Error saving data.');
+      alert(t.error.generic);
     } finally {
       if (btn) { btn.innerText = originalText; btn.disabled = false; }
     }
@@ -492,15 +509,16 @@ export default function App() {
 
   const HomeView = () => (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 max-w-5xl mx-auto">
-      <a href="https://drive.google.com/drive/folders/1-ZOC6sPNGISeD7Rf6lYT3Q10yYZaTdAy?usp=sharing" target="_blank" rel="noreferrer"
+      <a href="https://drive.google.com/drive/folders/1cyT_HDOo6nJQe3MOon0LKYMwOGDkMpzx?usp=sharing" target="_blank" rel="noreferrer"
          className="bg-white p-5 sm:p-6 rounded-xl shadow-sm border border-slate-100 hover:shadow-md hover:border-[#FDB515] transition-all flex flex-col items-center justify-center gap-4 group cursor-pointer min-h-[130px] sm:min-h-[160px] tap-target">
         <div className="bg-slate-50 p-4 rounded-full text-[#003262] group-hover:bg-[#003262] group-hover:text-white transition-colors"><BookOpen size={32} /></div>
         <h3 className="text-lg font-bold text-[#003262]">{t.f1}</h3>
       </a>
-      <div onClick={() => setView('upload')} className="bg-white p-5 sm:p-6 rounded-xl shadow-sm border border-slate-100 hover:shadow-md hover:border-[#FDB515] transition-all flex flex-col items-center justify-center gap-4 group cursor-pointer min-h-[130px] sm:min-h-[160px] tap-target">
+      <a href="https://forms.gle/LVQ2mxL1eFa8Up2u9" target="_blank" rel="noreferrer"
+         className="bg-white p-5 sm:p-6 rounded-xl shadow-sm border border-slate-100 hover:shadow-md hover:border-[#FDB515] transition-all flex flex-col items-center justify-center gap-4 group cursor-pointer min-h-[130px] sm:min-h-[160px] tap-target">
         <div className="bg-slate-50 p-4 rounded-full text-[#003262] group-hover:bg-[#003262] group-hover:text-white transition-colors"><Upload size={32} /></div>
         <h3 className="text-lg font-bold text-[#003262]">{t.f2}</h3>
-      </div>
+      </a>
       <div onClick={() => setView('replay')} className="bg-white p-5 sm:p-6 rounded-xl shadow-sm border border-slate-100 hover:shadow-md hover:border-[#FDB515] transition-all flex flex-col items-center justify-center gap-4 group cursor-pointer min-h-[130px] sm:min-h-[160px] tap-target">
         <div className="bg-slate-50 p-4 rounded-full text-[#003262] group-hover:bg-[#003262] group-hover:text-white transition-colors"><PlayCircle size={32} /></div>
         <h3 className="text-lg font-bold text-[#003262]">{t.f3}</h3>
@@ -528,32 +546,32 @@ export default function App() {
     return (
       <div className="max-w-3xl mx-auto bg-white p-5 sm:p-8 rounded-xl shadow-sm border border-slate-100">
         <div className="flex flex-wrap gap-x-2 gap-y-1 border-b border-slate-200 mb-6">
-          <button onClick={() => setTab('write')} className={`pb-3 px-3 sm:px-6 font-bold text-base sm:text-lg ${tab === 'write' ? 'border-b-2 border-[#FDB515] text-[#003262]' : 'text-slate-400 hover:text-slate-600'}`}>撰寫提問提交</button>
-          <button onClick={() => setTab('cases')} className={`pb-3 px-3 sm:px-6 font-bold text-base sm:text-lg flex items-center gap-2 ${tab === 'cases' ? 'border-b-2 border-[#FDB515] text-[#003262]' : 'text-slate-400 hover:text-slate-600'}`}><FileText size={18} /> 模擬提問卡參考</button>
+          <button onClick={() => setTab('write')} className={`pb-3 px-3 sm:px-6 font-bold text-base sm:text-lg ${tab === 'write' ? 'border-b-2 border-[#FDB515] text-[#003262]' : 'text-slate-400 hover:text-slate-600'}`}>{t.question.tabWrite}</button>
+          <button onClick={() => setTab('cases')} className={`pb-3 px-3 sm:px-6 font-bold text-base sm:text-lg flex items-center gap-2 ${tab === 'cases' ? 'border-b-2 border-[#FDB515] text-[#003262]' : 'text-slate-400 hover:text-slate-600'}`}><FileText size={18} /> {t.question.tabCases}</button>
         </div>
         {tab === 'write' ? (
           <form onSubmit={(e) => handleSubmit(e, 'question', formData)} className="flex flex-col gap-5">
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1">組織與角色</label>
-              <input required type="text" onChange={e => setFormData({ ...formData, role: e.target.value })} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-[#003262] outline-none" placeholder="例如：承岳精密 / 專案經理" />
+              <label className="block text-sm font-semibold text-slate-700 mb-1">{t.question.fieldRole}</label>
+              <input required type="text" onChange={e => setFormData({ ...formData, role: e.target.value })} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-[#003262] outline-none" placeholder={t.question.fieldRolePlaceholder} />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1">主要挑戰摘要</label>
-              <input required type="text" onChange={e => setFormData({ ...formData, challenge: e.target.value })} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-[#003262] outline-none" placeholder="一兩句話摘要目前困境" />
+              <label className="block text-sm font-semibold text-slate-700 mb-1">{t.question.fieldChallenge}</label>
+              <input required type="text" onChange={e => setFormData({ ...formData, challenge: e.target.value })} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-[#003262] outline-none" placeholder={t.question.fieldChallengePlaceholder} />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1">最想請教師資的問題 (Main Question)</label>
-              <textarea required onChange={e => setFormData({...formData, mainQuestion: e.target.value})} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-[#003262] outline-none h-32" placeholder="詳細描述背景與您的問題..."></textarea>
+              <label className="block text-sm font-semibold text-slate-700 mb-1">{t.question.fieldMainQuestion}</label>
+              <textarea required onChange={e => setFormData({...formData, mainQuestion: e.target.value})} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-[#003262] outline-none h-32" placeholder={t.question.fieldMainQuestionPlaceholder}></textarea>
             </div>
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1">補充檔案 <span className="text-slate-400 font-normal">(選填，附件總量上限 700KB)</span></label>
+              <label className="block text-sm font-semibold text-slate-700 mb-1">{t.common.attachmentLabel} <span className="text-slate-400 font-normal">{t.common.optionalWithLimit}</span></label>
               <AttachmentUploader value={formData.attachments} onChange={(files) => setFormData({ ...formData, attachments: files })} />
             </div>
             <button type="submit" className="mt-4 bg-[#003262] text-white font-bold py-3 rounded-lg hover:bg-[#002244] transition-colors flex items-center justify-center gap-2"><Send size={18} /> {t.submit}</button>
           </form>
         ) : (
           <div className="flex flex-col gap-4">
-            <p className="text-sm text-slate-500 mb-2">協助您理解如何把模糊的「客戶要求很多」轉成一個可由 Mentor 診斷、可在 90 天內推進的具體問題。</p>
+            <p className="text-sm text-slate-500 mb-2">{t.question.casesHelpText}</p>
             {mockCases.map(c => (
               <div key={c.id} className="border border-slate-200 rounded-lg overflow-hidden">
                 <button onClick={() => setOpenCase(openCase === c.id ? null : c.id)} className="w-full bg-slate-50 p-4 text-left flex justify-between items-center hover:bg-slate-100 transition-colors">
@@ -576,18 +594,18 @@ export default function App() {
     const handleOpen = (field, val) => setFormData(prev => ({ ...prev, open: { ...prev.open, [field]: val } }));
     return (
       <div className="max-w-4xl mx-auto bg-white p-5 sm:p-8 rounded-xl shadow-sm border border-slate-100">
-        <h2 className="text-2xl font-bold text-[#003262] mb-2 text-center">每週課後滿意度調查表</h2>
-        <p className="text-sm text-slate-500 text-center mb-8">感謝您完成本週課程。您的回覆將作為後續課程優化依據。問卷約需 3–5 分鐘。</p>
+        <h2 className="text-2xl font-bold text-[#003262] mb-2 text-center">{t.survey.title}</h2>
+        <p className="text-sm text-slate-500 text-center mb-8">{t.survey.subtitle}</p>
         <form onSubmit={(e) => handleSubmit(e, 'survey', formData)} className="flex flex-col gap-8">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 bg-slate-50 p-4 sm:p-5 rounded-lg border border-slate-200">
-            <div><label className="block text-xs font-bold text-slate-500 mb-1">課程週次</label><input required onChange={e => handleMeta('week', e.target.value)} type="text" className="w-full p-2 border rounded outline-none" placeholder="例如：第 1 週" /></div>
-            <div><label className="block text-xs font-bold text-slate-500 mb-1">上課日期</label><input required onChange={e => handleMeta('date', e.target.value)} type="date" className="w-full p-2 border rounded outline-none" /></div>
-            <div><label className="block text-xs font-bold text-slate-500 mb-1">本週主題</label><input required onChange={e => handleMeta('theme', e.target.value)} type="text" className="w-full p-2 border rounded outline-none" /></div>
-            <div><label className="block text-xs font-bold text-slate-500 mb-1">講師姓名</label><input required onChange={e => handleMeta('lecturer', e.target.value)} type="text" className="w-full p-2 border rounded outline-none" /></div>
-            <div><label className="block text-xs font-bold text-slate-500 mb-1">學員姓名 (選填)</label><input onChange={e => handleMeta('name', e.target.value)} type="text" className="w-full p-2 border rounded outline-none" /></div>
-            <div><label className="block text-xs font-bold text-slate-500 mb-1">所屬組織 (選填)</label><input onChange={e => handleMeta('org', e.target.value)} type="text" className="w-full p-2 border rounded outline-none" /></div>
+            <div><label className="block text-xs font-bold text-slate-500 mb-1">{t.survey.meta.week}</label><input required onChange={e => handleMeta('week', e.target.value)} type="text" className="w-full p-2 border rounded outline-none" placeholder={t.survey.meta.weekPlaceholder} /></div>
+            <div><label className="block text-xs font-bold text-slate-500 mb-1">{t.survey.meta.date}</label><input required onChange={e => handleMeta('date', e.target.value)} type="date" className="w-full p-2 border rounded outline-none" /></div>
+            <div><label className="block text-xs font-bold text-slate-500 mb-1">{t.survey.meta.theme}</label><input required onChange={e => handleMeta('theme', e.target.value)} type="text" className="w-full p-2 border rounded outline-none" /></div>
+            <div><label className="block text-xs font-bold text-slate-500 mb-1">{t.survey.meta.lecturer}</label><input required onChange={e => handleMeta('lecturer', e.target.value)} type="text" className="w-full p-2 border rounded outline-none" /></div>
+            <div><label className="block text-xs font-bold text-slate-500 mb-1">{t.survey.meta.name} ({t.common.optionalLabel})</label><input onChange={e => handleMeta('name', e.target.value)} type="text" className="w-full p-2 border rounded outline-none" /></div>
+            <div><label className="block text-xs font-bold text-slate-500 mb-1">{t.survey.meta.org} ({t.common.optionalLabel})</label><input onChange={e => handleMeta('org', e.target.value)} type="text" className="w-full p-2 border rounded outline-none" /></div>
           </div>
-          <div className="text-sm text-[#003262] font-semibold bg-[#FDB515]/20 p-3 rounded-md text-center">評量尺度：1＝非常不同意 ｜ 2＝不同意 ｜ 3＝普通 ｜ 4＝同意 ｜ 5＝非常同意</div>
+          <div className="text-sm text-[#003262] font-semibold bg-[#FDB515]/20 p-3 rounded-md text-center">{t.survey.ratingScale}</div>
           {surveySchema.map(sec => (
             <div key={sec.id}>
               <h3 className="font-bold text-[#003262] mb-3 border-b-2 border-[#003262] pb-2 inline-block">{sec.title}</h3>
@@ -627,15 +645,15 @@ export default function App() {
             </div>
           ))}
           <div>
-            <h3 className="font-bold text-[#003262] mb-3 border-b-2 border-[#003262] pb-2 inline-block">五、開放式回饋</h3>
+            <h3 className="font-bold text-[#003262] mb-3 border-b-2 border-[#003262] pb-2 inline-block">{t.survey.openFeedback.title}</h3>
             <div className="space-y-5">
-              <div><label className="block text-sm font-semibold text-slate-700 mb-2">1. 本週課程中，對您最有價值的主題、觀點、案例或工具是什麼？為什麼？</label><textarea required onChange={e => handleOpen('open_1', e.target.value)} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-[#003262] outline-none h-24 resize-none"></textarea></div>
-              <div><label className="block text-sm font-semibold text-slate-700 mb-2">2. 本週課程在內容、教學方式、教材或行政安排上，有哪些地方可以改善？</label><textarea required onChange={e => handleOpen('open_2', e.target.value)} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-[#003262] outline-none h-24 resize-none"></textarea></div>
-              <div><label className="block text-sm font-semibold text-slate-700 mb-2">3. 您希望下週課程或後續學習能進一步回應哪一個問題？</label><textarea required onChange={e=>handleOpen('open_3', e.target.value)} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-[#003262] outline-none h-24 resize-none"></textarea></div>
-              <div><label className="block text-sm font-semibold text-slate-700 mb-2">補充檔案 <span className="text-slate-400 font-normal">(選填，附件總量上限 700KB)</span></label><AttachmentUploader value={formData.attachments} onChange={(files) => setFormData({ ...formData, attachments: files })} /></div>
+              <div><label className="block text-sm font-semibold text-slate-700 mb-2">1. {t.survey.openFeedback.q1}</label><textarea required onChange={e => handleOpen('open_1', e.target.value)} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-[#003262] outline-none h-24 resize-none"></textarea></div>
+              <div><label className="block text-sm font-semibold text-slate-700 mb-2">2. {t.survey.openFeedback.q2}</label><textarea required onChange={e => handleOpen('open_2', e.target.value)} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-[#003262] outline-none h-24 resize-none"></textarea></div>
+              <div><label className="block text-sm font-semibold text-slate-700 mb-2">3. {t.survey.openFeedback.q3}</label><textarea required onChange={e=>handleOpen('open_3', e.target.value)} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-[#003262] outline-none h-24 resize-none"></textarea></div>
+              <div><label className="block text-sm font-semibold text-slate-700 mb-2">{t.common.attachmentLabel} <span className="text-slate-400 font-normal">{t.common.optionalWithLimit}</span></label><AttachmentUploader value={formData.attachments} onChange={(files) => setFormData({ ...formData, attachments: files })} /></div>
             </div>
           </div>
-          <button type="submit" className="mt-4 bg-[#003262] text-white font-bold py-4 rounded-lg hover:bg-[#002244] shadow-md transition-all flex items-center justify-center gap-2 text-lg"><Send size={20} /> 提交滿意度調查</button>
+          <button type="submit" className="mt-4 bg-[#003262] text-white font-bold py-4 rounded-lg hover:bg-[#002244] shadow-md transition-all flex items-center justify-center gap-2 text-lg"><Send size={20} /> {t.survey.submitButton}</button>
         </form>
       </div>
     );
@@ -649,9 +667,9 @@ export default function App() {
     const handleFiles = (fileList) => {
       const files = Array.from(fileList);
       const tooBig = files.some(f => f.size > MAX_FILE_BYTES);
-      if (tooBig) { alert('單一檔案超過 5MB，請改用較小的檔案。'); return; }
+      if (tooBig) { alert(t.common.attachmentTooBig); return; }
       const total = (formData.files || []).reduce((s, f) => s + (f.size || 0), 0) + files.reduce((s, f) => s + (f.size || 0), 0);
-      if (total > MAX_TOTAL_BYTES) { alert('附件總量超過 700KB（受 Firestore 單文件 1MB 限制），請減少或壓縮檔案。'); return; }
+      if (total > MAX_TOTAL_BYTES) { alert(t.common.attachmentTotalTooBig); return; }
       setFormData(prev => ({ ...prev, files: [...(prev.files || []), ...files] }));
     };
     return (
@@ -669,16 +687,18 @@ export default function App() {
                   </ul>
                 )}
               </div>
-              <div><label className="block text-sm font-semibold text-slate-700 mb-1">{config.desc}</label><textarea onChange={e => setFormData({ ...formData, desc: e.target.value })} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-[#003262] outline-none h-32" placeholder="選填"></textarea></div>
+              <div><label className="block text-sm font-semibold text-slate-700 mb-1">{config.desc}</label><textarea onChange={e => setFormData({ ...formData, desc: e.target.value })} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-[#003262] outline-none h-32" placeholder={t.common.optionalLabel}></textarea></div>
             </>
           )}
           {type === 'booking' && (
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div><label className="block text-sm font-semibold text-slate-700 mb-1">{config.name}</label><input required type="text" onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-[#003262] outline-none" placeholder={t.forms.booking.namePlaceholder} /></div>
+                <div><label className="block text-sm font-semibold text-slate-700 mb-1">{config.email}</label><input required type="email" onChange={e => setFormData({ ...formData, email: e.target.value })} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-[#003262] outline-none" placeholder={t.forms.booking.emailPlaceholder} /></div>
                 <div><label className="block text-sm font-semibold text-slate-700 mb-1">{config.date}</label><input required type="date" onChange={e => setFormData({ ...formData, date: e.target.value })} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-[#003262] outline-none" /></div>
-                <div><label className="block text-sm font-semibold text-slate-700 mb-1">{config.time}</label><select required onChange={e => setFormData({ ...formData, time: e.target.value })} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-[#003262] outline-none"><option value="">Select...</option><option value="Morning">Morning</option><option value="Afternoon">Afternoon</option></select></div>
+                <div><label className="block text-sm font-semibold text-slate-700 mb-1">{config.time}</label><select required onChange={e => setFormData({ ...formData, time: e.target.value })} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-[#003262] outline-none"><option value="">-- 請選擇 --</option><option value="Morning">上午</option><option value="Afternoon">下午</option></select></div>
               </div>
-              <div><label className="block text-sm font-semibold text-slate-700 mb-1">{config.topic}</label><textarea required onChange={e => setFormData({ ...formData, topic: e.target.value })} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-[#003262] outline-none h-24"></textarea></div>
+              <div><label className="block text-sm font-semibold text-slate-700 mb-1">{config.topic}</label><textarea required onChange={e => setFormData({ ...formData, topic: e.target.value })} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-[#003262] outline-none h-24" placeholder={t.forms.booking.topicPlaceholder}></textarea></div>
             </>
           )}
           <button type="submit" className="mt-4 bg-[#003262] text-white font-bold py-3 rounded-lg hover:bg-[#002244] transition-colors flex items-center justify-center gap-2"><Send size={18} /> {t.submit}</button>
@@ -704,21 +724,44 @@ export default function App() {
           <select value={lang} onChange={(e) => setLang(e.target.value)} className="bg-slate-100 border-none text-sm font-semibold text-[#003262] rounded-lg py-2 px-3 outline-none cursor-pointer hover:bg-slate-200 transition-colors">
             <option value="zh-TW">繁體中文</option>
             <option value="zh-CN">简体中文</option>
-            <option value="en">English</option>
           </select>
           <select value={role} onChange={(e) => trySwitchRole(e.target.value)} className="bg-[#FDB515]/10 border border-[#FDB515]/30 text-sm font-semibold text-[#b47b00] rounded-lg py-2 px-3 outline-none cursor-pointer hover:bg-[#FDB515]/20 transition-colors">
             <option value="student">{t.roleStudent}</option>
+            <option value="TA">{t.roleTA}</option>
             <option value="admin">{t.roleAdmin}</option>
           </select>
           {role === 'student' && (
-            <button onClick={() => setView('records')} className="flex items-center gap-2 bg-[#003262] text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-[#002244] transition-colors shadow-sm">
-              <Database size={16} /> <span className="hidden sm:inline">{t.myRecords}</span>
-            </button>
+            <>
+              <button onClick={() => setView('records')} className="flex items-center gap-2 bg-[#003262] text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-[#002244] transition-colors shadow-sm">
+                <Database size={16} /> <span className="hidden sm:inline">{t.myRecords}</span>
+              </button>
+              <button onClick={() => setView('knowledge')} className="flex items-center gap-2 bg-white text-[#003262] border border-[#003262] px-4 py-2 rounded-lg text-sm font-bold hover:bg-slate-50 transition-colors shadow-sm">
+                <Globe size={16} /> <span className="hidden sm:inline">{t.knowledge || '知識查詢'}</span>
+              </button>
+            </>
+          )}
+          {role === 'TA' && (
+            <>
+              <button onClick={() => setView('ta')} className="flex items-center gap-2 bg-white text-[#003262] border border-[#003262] px-4 py-2 rounded-lg text-sm font-bold hover:bg-slate-50 transition-colors shadow-sm">
+                <Users size={16} /> <span className="hidden sm:inline">{t.taPanel || 'TA 助教視角'}</span>
+              </button>
+              <button onClick={() => setView('knowledge')} className="flex items-center gap-2 bg-white text-[#003262] border border-[#003262] px-4 py-2 rounded-lg text-sm font-bold hover:bg-slate-50 transition-colors shadow-sm">
+                <Globe size={16} /> <span className="hidden sm:inline">{t.knowledge || '知識查詢'}</span>
+              </button>
+            </>
           )}
           {role === 'admin' && (
-            <button onClick={() => setView('admin')} className="flex items-center gap-2 bg-[#FDB515] text-[#003262] px-4 py-2 rounded-lg text-sm font-bold hover:bg-[#e5a213] transition-colors shadow-sm">
-              <ShieldCheck size={16} /> <span className="hidden sm:inline">{t.admin}</span>
-            </button>
+            <>
+              <button onClick={() => setView('admin')} className="flex items-center gap-2 bg-[#FDB515] text-[#003262] px-4 py-2 rounded-lg text-sm font-bold hover:bg-[#e5a213] transition-colors shadow-sm">
+                <ShieldCheck size={16} /> <span className="hidden sm:inline">{t.admin}</span>
+              </button>
+              <button onClick={() => setView('knowledge')} className="flex items-center gap-2 bg-white text-[#003262] border border-[#003262] px-4 py-2 rounded-lg text-sm font-bold hover:bg-slate-50 transition-colors shadow-sm">
+                <Globe size={16} /> <span className="hidden sm:inline">{t.knowledge || '知識查詢'}</span>
+              </button>
+              <button onClick={() => setView('auth')} className="flex items-center gap-2 bg-white text-[#003262] border border-[#003262] px-4 py-2 rounded-lg text-sm font-bold hover:bg-slate-50 transition-colors shadow-sm">
+                <ShieldCheck size={16} /> <span className="hidden sm:inline">{t.authPanel || '授權設定'}</span>
+              </button>
+            </>
           )}
         </div>
       </nav>
@@ -732,15 +775,31 @@ export default function App() {
           <div className="max-w-5xl mx-auto mb-10">
             <div className="bg-[#003262] rounded-2xl p-6 sm:p-10 md:p-16 text-center shadow-lg relative overflow-hidden border-b-4 border-[#FDB515]">
               <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-[#FDB515] rounded-full opacity-10 blur-3xl"></div>
-              <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-white mb-6 relative z-10 font-serif tracking-tight leading-tight">{t.heroTitle}</h1>
-              <a href="https://corporateinnovation.berkeley.edu/students/business-model-practicum-2026/" target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-2 bg-[#FDB515] text-[#003262] font-bold text-sm px-6 py-2.5 rounded-full hover:bg-yellow-400 transition shadow-md relative z-10"><Globe size={16} /> 柏克萊官網課程介紹</a>
+              <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-white mb-4 relative z-10 font-serif tracking-tight leading-tight">{t.heroTitle}</h1>
+              <div className="relative z-10 bg-white rounded-xl border border-slate-200 overflow-hidden shadow-lg text-left">
+                <div className="flex items-center gap-2 bg-slate-100 border-b border-slate-200 px-4 py-2">
+                  <span className="text-xs font-bold text-slate-500">{t.heroCta}</span>
+                  <span className="text-[10px] text-slate-400 truncate">https://corporateinnovation.berkeley.edu/students/business-model-practicum-2026/</span>
+                </div>
+                <iframe
+                  src="https://corporateinnovation.berkeley.edu/students/business-model-practicum-2026/"
+                  title={t.heroTitle}
+                  className="w-full border-0"
+                  style={{ height: '72vh', minHeight: 420 }}
+                  sandbox="allow-scripts allow-same-origin"
+                  referrerPolicy="no-referrer"
+                >
+                  <div className="p-6 text-sm text-slate-600">您的瀏覽器不支援嵌入頁面，請<a href="https://corporateinnovation.berkeley.edu/students/business-model-practicum-2026/" target="_blank" rel="noreferrer" className="text-[#003262] underline font-semibold">前往 2026 Berkeley柏克萊國際永續策略人才培育課程學習中心</a>。</div>
+                </iframe>
+              </div>
             </div>
           </div>
         )}
 
         {view === 'home' && <HomeView />}
         {['upload', 'booking', 'question', 'survey'].includes(view) && <DynamicForm type={view} />}
-        {view === 'replay' && <ReplayView t={t} />}
+        {view === 'replay' && replayView === 'list' && <ReplayListView t={t} videos={replayVideos} onSelect={(v) => { setSelectedVideo(v); setReplayView('player'); }} />}
+        {view === 'replay' && replayView === 'player' && selectedVideo && <ReplayPlayerView t={t} video={selectedVideo} onBack={() => setReplayView('list')} />}
 
         {view === 'records' && role === 'student' && (
           <>
@@ -749,11 +808,59 @@ export default function App() {
           </>
         )}
 
+        {view === 'ta' && role === 'TA' && (
+          <div className="max-w-5xl mx-auto">
+            <h2 className="text-xl sm:text-2xl font-bold text-[#003262] mb-4 sm:mb-6 flex items-center gap-3"><Users className="text-[#FDB515]" /> {t.taPanel || 'TA 助教視角'}</h2>
+            <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6 text-sm text-slate-600">
+              TA 助教視角頁面待後續串接配對名冊與學員資料，目前保留入口。
+            </div>
+          </div>
+        )}
+
         {view === 'admin' && role === 'admin' && (
           <>
             <h2 className="text-xl sm:text-2xl font-bold text-[#003262] max-w-5xl mx-auto mb-4 sm:mb-6 flex items-center gap-3"><ShieldCheck className="text-[#FDB515]" /> {t.admin}</h2>
             <RecordsView data={submissions} isAdmin={true} t={t} lang={lang} />
           </>
+        )}
+
+        {view === 'auth' && role === 'admin' && (
+          <div className="max-w-3xl mx-auto bg-white p-5 sm:p-8 rounded-xl shadow-sm border border-slate-100">
+            <h2 className="text-xl sm:text-2xl font-bold text-[#003262] mb-4 flex items-center gap-3"><ShieldCheck className="text-[#FDB515]" /> {t.authPanel || '授權設定'}</h2>
+            <div className="flex flex-col gap-3">
+              <button onClick={handleGoogleSignIn} className="bg-[#003262] text-white font-bold py-3 rounded-lg hover:bg-[#002244] transition-colors">{t.auth.signInGoogle}</button>
+              <button onClick={handleSignOut} className="bg-slate-100 text-slate-700 font-bold py-3 rounded-lg hover:bg-slate-200 transition-colors">{t.auth.signOut}</button>
+              {authMessage && <p className="text-xs text-slate-500">{authMessage}</p>}
+              {user && (
+                <div className="text-xs text-slate-500">
+                  已登入：{user.displayName || user.email || user.uid}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {view === 'knowledge' && (
+          <div className="max-w-4xl mx-auto bg-white p-5 sm:p-8 rounded-xl shadow-sm border border-slate-100">
+            <h2 className="text-xl sm:text-2xl font-bold text-[#003262] mb-4 flex items-center gap-3"><Globe className="text-[#FDB515]" /> {t.knowledge || '知識查詢'}</h2>
+            <div className="flex flex-col gap-3 mb-4">
+              <div className="flex gap-2">
+                <input value={knowledgeQuery} onChange={(e) => setKnowledgeQuery(e.target.value)} placeholder={t.knowledgeSearchPlaceholder || '請輸入關鍵字...'} className="flex-1 border rounded-lg p-3 outline-none" />
+                <button onClick={handleKnowledgeSearch} className="bg-[#003262] text-white px-4 rounded-lg font-bold hover:bg-[#002244] transition-colors"><Search size={18} /></button>
+              </div>
+              <div className="text-xs text-slate-400">目前視角：{role}</div>
+            </div>
+            <div className="flex flex-col gap-3">
+              {knowledgeEntries.length === 0 && <div className="text-sm text-slate-500">{t.knowledgeEmpty || '目前無可顯示知識條目。'}</div>}
+              {knowledgeEntries.map((entry) => (
+                <div key={entry.id} className="border border-slate-200 rounded-lg p-4">
+                  <div className="text-sm font-bold text-[#003262]">{entry.title}</div>
+                  <div className="text-xs text-slate-500 mt-1">{entry.body}</div>
+                  {entry.tags?.length ? <div className="text-xs text-slate-400 mt-2">{entry.tags.join(', ')}</div> : null}
+                </div>
+              ))}
+            </div>
+          </div>
         )}
       </main>
 
