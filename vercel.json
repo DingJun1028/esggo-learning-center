@@ -1,0 +1,19 @@
+{
+  "buildCommand": "pnpm run build",
+  "outputDirectory": "dist",
+  "installCommand": "pnpm install",
+  "framework": "vite",
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ],
+  "env": {
+    "VITE_FB_API_KEY": "@esggo_vite_fb_api_key",
+    "VITE_FB_AUTH_DOMAIN": "@esggo_vite_fb_auth_domain",
+    "VITE_FB_PROJECT_ID": "@esggo_vite_fb_project_id",
+    "VITE_FB_STORAGE_BUCKET": "@esggo_vite_fb_storage_bucket",
+    "VITE_FB_MSG_SENDER_ID": "@esggo_vite_fb_msg_sender_id",
+    "VITE_FB_APP_ID": "@esggo_vite_fb_app_id",
+    "VITE_FB_MEASUREMENT_ID": "@esggo_vite_fb_measurement_id",
+    "VITE_REPLAY_WEB_APP_URL": "@esggo_replay_web_app_url"
+  }
+}

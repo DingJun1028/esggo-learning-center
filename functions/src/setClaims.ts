@@ -8,12 +8,12 @@ const TA_PASS = (process.env.TA_PASS || '').trim();
 
 const ALLOWED_ROLES = new Set(['student', 'TA', 'admin']);
 
-function normalizeRole(value) {
+function normalizeRole(value: any) {
   const raw = String(value ?? '').trim();
   return ALLOWED_ROLES.has(raw) ? raw : 'student';
 }
 
-function isAuthorized(req) {
+function isAuthorized(req: any) {
   if (!ADMIN_PASS && !TA_PASS) {
     return { authorized: true, role: 'admin' };
   }
@@ -79,7 +79,7 @@ export const setClaims = functions.onRequest(async (req, res) => {
       return;
     }
 
-    const patch = { role: nextRole };
+    const patch: Record<string, string> = { role: nextRole };
 
     if (typeof payload.displayName === 'string' && payload.displayName.trim()) {
       patch.displayName = payload.displayName.trim();
