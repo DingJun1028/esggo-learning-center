@@ -30,3 +30,4 @@ firebase-debug.log
 
 # ===== Firebase emulator local data =====
 emulator-data/
+.vercel

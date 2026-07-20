@@ -48,6 +48,46 @@ const seedEntries = [
     roles: ['student', 'TA', 'admin'],
     updatedAt: '2026-06-01T00:00:00.000Z',
   },
+  {
+    id: 'esg_framework',
+    title: 'ESG 報告框架簡介',
+    body: '主要框架包括 GRI、SASB、TCFD、EU CSRD。建議先从 GRI 核心選項開始，再依產業叠加 SASB 標準。',
+    tags: ['ESG', 'framework', 'GRI', 'SASB', 'reporting'],
+    roles: ['student', 'TA', 'admin'],
+    updatedAt: '2026-06-05T00:00:00.000Z',
+  },
+  {
+    id: 'sustainability_metrics',
+    title: '常見 Sustainability 指標',
+    body: '碳排放範疇一/二/三、用水量、廢棄物回收率、能源強度、供應鏈碳足跡。这些指標用於設定基線與追蹤進展。',
+    tags: ['metrics', 'carbon', 'water', 'waste', 'energy'],
+    roles: ['student', 'TA', 'admin'],
+    updatedAt: '2026-06-10T00:00:00.000Z',
+  },
+  {
+    id: 'stakeholder_engagement',
+    title: 'Stakeholder 溝通策略',
+    body: '高階主管關注風險與報酬；投資人要看碳揭露；社區關注重生態與就業；員工關注多元包容。建議建立利益關係人矩陣。',
+    tags: ['stakeholder', 'communication', 'engagement'],
+    roles: ['TA', 'admin'],
+    updatedAt: '2026-06-15T00:00:00.000Z',
+  },
+  {
+    id: 'supply_chain_esg',
+    title: '供應鏈 ESG 盡職調查',
+    body: '從供應商篩選、合約條款、稽核頻率到偏離處置，建議建立季度供應商 ESG 評分機制，並納入新版 RFP 要求。',
+    tags: ['supply chain', 'due diligence', 'vendor', 'procurement'],
+    roles: ['TA', 'admin'],
+    updatedAt: '2026-06-20T00:00:00.000Z',
+  },
+  {
+    id: 'materiality_assessment',
+    title: '實質性評估（Materiality Assessment）步驟',
+    body: '1) 列出议题 2) 利害關係人訪談 3) 影響程度與發生機率矩陣 4) 確立首要 ESG 議題 5) 每两年再评估一次。',
+    tags: ['materiality', 'assessment', 'strategy'],
+    roles: ['student', 'TA', 'admin'],
+    updatedAt: '2026-06-25T00:00:00.000Z',
+  },
 ];
 
 const localKey = 'berkeley_omnidata';
