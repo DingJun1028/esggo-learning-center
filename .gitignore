@@ -21,9 +21,8 @@ dist-ssr/
 
 # ===== Firebase deploy artifacts / runtime state =====
 .firebase/
-.firebaserc
-.firebase-debug.log
-.firebase-hosting*/**
+
+firebase-debug.log
 
 # ===== Hermes workspace runtime state (kept local) =====
 .hermes/

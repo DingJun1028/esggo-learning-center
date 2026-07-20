@@ -102,7 +102,7 @@ const DetailPanel = ({ t, item }) => {
 };
 
 // 共用的真實檔案上傳元件：暫存原始 File 物件，送出時轉成 base64 內嵌 Firestore
-const AttachmentUploader = ({ value = [], onChange }) => {
+const AttachmentUploader = ({ value = [], onChange, t }) => {
   const [error, setError] = useState('');
   const handleFiles = (fileList) => {
     const files = Array.from(fileList);
@@ -668,7 +668,7 @@ export default function App() {
             </div>
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-1">{t.common.attachmentLabel} <span className="text-slate-400 font-normal">{t.common.optionalWithLimit}</span></label>
-              <AttachmentUploader value={formData.attachments} onChange={(files) => setFormData({ ...formData, attachments: files })} />
+              <AttachmentUploader value={formData.attachments} onChange={(files) => setFormData({ ...formData, attachments: files })} t={t} />
             </div>
             <button type="submit" className="mt-4 bg-[#003262] text-white font-bold py-3 rounded-lg hover:bg-[#002244] transition-colors flex items-center justify-center gap-2"><Send size={18} /> {t.submit}</button>
           </form>
@@ -753,7 +753,7 @@ export default function App() {
               <div><label className="block text-sm font-semibold text-slate-700 mb-2">1. {t.survey.openFeedback.q1}</label><textarea required onChange={e => handleOpen('open_1', e.target.value)} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-[#003262] outline-none h-24 resize-none"></textarea></div>
               <div><label className="block text-sm font-semibold text-slate-700 mb-2">2. {t.survey.openFeedback.q2}</label><textarea required onChange={e => handleOpen('open_2', e.target.value)} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-[#003262] outline-none h-24 resize-none"></textarea></div>
               <div><label className="block text-sm font-semibold text-slate-700 mb-2">3. {t.survey.openFeedback.q3}</label><textarea required onChange={e=>handleOpen('open_3', e.target.value)} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-[#003262] outline-none h-24 resize-none"></textarea></div>
-              <div><label className="block text-sm font-semibold text-slate-700 mb-2">{t.common.attachmentLabel} <span className="text-slate-400 font-normal">{t.common.optionalWithLimit}</span></label><AttachmentUploader value={formData.attachments} onChange={(files) => setFormData({ ...formData, attachments: files })} /></div>
+              <div><label className="block text-sm font-semibold text-slate-700 mb-2">{t.common.attachmentLabel} <span className="text-slate-400 font-normal">{t.common.optionalWithLimit}</span></label><AttachmentUploader value={formData.attachments} onChange={(files) => setFormData({ ...formData, attachments: files })} t={t} /></div>
             </div>
           </div>
           <button type="submit" className="mt-4 bg-[#003262] text-white font-bold py-4 rounded-lg hover:bg-[#002244] shadow-md transition-all flex items-center justify-center gap-2 text-lg"><Send size={20} /> {t.survey.submitButton}</button>
@@ -1002,7 +1002,7 @@ export default function App() {
                                   <div key={s.id} className="flex items-center gap-2 text-xs bg-white border border-slate-100 rounded px-3 py-2">
                                     <FileText size={12} className="text-[#FDB515] shrink-0" />
                                     <span className="font-medium text-[#003262]">{s.type || '—'}</span>
-                                    <span className="text-slate-400 ml-auto">{s.timestamp ? new Date(s.timestamp).toLocaleDateString() : ''}</span>
+                                    <span className="text-slate-400 ml-auto">{(s.createdAt || s.timestamp) ? new Date(s.createdAt || s.timestamp).toLocaleDateString() : ''}</span>
                                   </div>
                                 ))}
                                 {studentSubs.length > 5 && <div className="text-xs text-slate-400 text-center">+{studentSubs.length - 5} more</div>}

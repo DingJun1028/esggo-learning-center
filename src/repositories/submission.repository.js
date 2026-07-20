@@ -12,7 +12,7 @@ import {
   getDocs,
 } from 'firebase/firestore';
 
-import { loadLocal, saveLocal, localListeners, notifyLocal, useFirebase, APP_ID, db } from '../db';
+import { loadLocal, saveLocal, localListeners, notifyLocal, useFirebase, APP_ID, db, emitTelemetry } from '../db';
 
 const formatTimestamp = (value) => {
   if (!value) return new Date().toISOString();
