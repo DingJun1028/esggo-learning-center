@@ -553,43 +553,46 @@ export default function App() {
 
   // 角色切換（基於 Firebase claims；admin/TA 需要 Google 登入後的 claims 驗證，密碼作為 fallback）
   const trySwitchRole = async (next) => {
-    if (next === 'student') {
-      setRole('student'); setView('home');
-      return;
-    }
-    // 管理員 UID 直接授權（Google 登入後，無需密碼或 claims）
-    if (next === 'admin' && user && !user.isLocal && !user.isAnonymous && user.uid === ADMIN_UID) {
-      setRole('admin'); setView('admin'); return;
-    }
-    // 已有 Google 帳號且 claims 已驗證，直接切換
-    if (user && !user.isLocal && !user.isAnonymous) {
-      const claimsRole = await refreshRoleFromClaims(user);
-      if ((next === 'admin' && claimsRole === 'admin') || (next === 'TA' && (claimsRole === 'TA' || claimsRole === 'admin'))) {
-        setRole(next);
-        setView(next === 'admin' ? 'admin' : 'ta');
-        return;
+      if (next === 'student') {
+        setRole('student'); setView('home'); return;
       }
-      // Claims 不匹配，提示用戶無權限或降回密碼
-      if (next === 'admin') {
-        if (adminOk) { setRole('admin'); setView('admin'); return; }
-        setAdminPrompt(true);
-        return;
+      try {
+        if (next === 'admin' && user && !user.isLocal && !user.isAnonymous && user.uid === ADMIN_UID) {
+          setRole('admin'); setView('admin'); return;
+        }
+        if (user && !user.isLocal && !user.isAnonymous) {
+          const claimsRole = await refreshRoleFromClaims(user);
+          if ((next === 'admin' && claimsRole === 'admin') || (next === 'TA' && (claimsRole === 'TA' || claimsRole === 'admin'))) {
+            setRole(next); setView(next === 'admin' ? 'admin' : 'ta'); return;
+          }
+          if (next === 'admin') {
+            if (adminOk) { setRole('admin'); setView('admin'); return; }
+            setAdminPrompt(true); return;
+          }
+          alert(t.auth?.noPermission || '您的帳號無此權限，請聯繫管理員。'); return;
+        }
+        if (next === 'admin') {
+          if (adminOk) { setRole('admin'); setView('admin'); return; }
+          setAdminPrompt(true); return;
+        }
+        alert(t.auth?.signInRequired || '請先使用 Google 登入');
+      } catch (err) {
+        console.error('[role-switch]', err);
+        if (next === 'admin') {
+          if (adminOk) { setRole('admin'); setView('admin'); return; }
+          setAdminPrompt(true); return;
+        }
+        alert(t.auth?.noPermission || '切換角色失敗，請稍後再試。');
       }
-      alert(t.auth?.noPermission || '您的帳號無此權限，請聯繫管理員。');
-      return;
-    }
-    // 尚未用 Google 登入，先嘗試密碼（admin）或提示登入
-    if (next === 'admin') {
-      if (adminOk) { setRole('admin'); setView('admin'); return; }
-      setAdminPrompt(true);
-      return;
-    }
-    alert(t.auth?.signInRequired || '請先使用 Google 登入');
-  };
+    };
   const confirmAdmin = () => {
-    if (!ADMIN_PASS || adminInput === ADMIN_PASS) { setAdminOk(true); setRole('admin'); setView('admin'); }
-    else alert(t.admin?.wrongPassword || t.error?.adminWrongPassword || '管理員密碼錯誤');
-    setAdminPrompt(false); setAdminInput('');
+    if (!ADMIN_PASS || adminInput === ADMIN_PASS) {
+      setAdminOk(true);
+      setRole('admin');
+      setView('admin');
+    } else alert(t.admin?.wrongPassword || t.error?.adminWrongPassword || '管理員密碼錯誤');
+    setAdminPrompt(false);
+    setAdminInput('');
   };
 
   // 送出：先將附件轉成 base64 內嵌，再寫入 Firestore（或本機）；不使用 Cloud Storage
