@@ -1,0 +1,52 @@
+import {
+  doc,
+  setDoc,
+  getDoc,
+} from 'firebase/firestore';
+
+import { loadLocal, saveLocal, useFirebase, APP_ID, emitTelemetry } from '../db';
+
+const LOCAL_PROFILE_PREFIX = `berkeley_profile_${APP_ID}_`;
+const profileRef = (uid) => doc(db, 'artifacts', APP_ID, 'public', 'profiles', uid);
+const profileLocalStorageKey = (uid) => `${LOCAL_PROFILE_PREFIX}${uid}`;
+
+const defaultProfile = () => ({
+  displayName: '',
+  email: '',
+  role: 'student',
+  org: '',
+  status: 'active',
+  updatedAt: new Date().toISOString(),
+});
+
+export const upsertProfile = async (uid, updates = {}) => {
+  const payload = defaultProfile();
+  let current = null;
+
+  if (useFirebase && db) {
+    const snap = await getDoc(profileRef(uid));
+    if (snap.exists()) current = snap.data();
+  } else {
+    try { current = JSON.parse(localStorage.getItem(profileLocalStorageKey(uid)) || '{}'); }
+    catch { current = {}; }
+  }
+
+  const next = { ...current, ...updates, updatedAt: new Date().toISOString() };
+  if (useFirebase && db) await setDoc(profileRef(uid), next, { merge: true });
+  else localStorage.setItem(profileLocalStorageKey(uid), JSON.stringify(next));
+
+  emitTelemetry('profile_upsert', { uid, role: next.role });
+  return next;
+};
+
+export const getProfile = async (uid) => {
+  if (!uid) return null;
+  if (useFirebase && db) {
+    const snap = await getDoc(profileRef(uid));
+    if (snap.exists()) return snap.data();
+    return null;
+  }
+
+  try { return JSON.parse(localStorage.getItem(profileLocalStorageKey(uid)) || '{}'); }
+  catch { return null; }
+};

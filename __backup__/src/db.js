@@ -18,7 +18,6 @@ import {
   GoogleAuthProvider,
   signInWithPopup,
   signOut as firebaseSignOut,
-  getIdTokenResult,
 } from 'firebase/auth';
 import {
   collection,
@@ -59,7 +58,6 @@ export const DataError = Object.freeze({
   CONFIG_INVALID: new Error('Firebase 設定無效，請檢查 .env 是否已填入。'),
   DOCUMENT_TOO_LARGE: new Error('文件大小超過 Firestore 上限 1MB。'),
   UNAUTHENTICATED: new Error('使用者尚未登入。'),
-  UNAUTHORIZED: new Error('缺少管理員權限。'),
 });
 
 let app = null;
@@ -81,7 +79,7 @@ if (isConfigComplete()) {
     app = initializeApp(firebaseConfig);
     auth = getAuth(app);
     db = initializeFirestore(app, {
-      localCache: persistentLocalCache({}),
+      localCache: persistentLocalCache({})
     });
     useFirebase = true;
   } catch (error) {
@@ -395,31 +393,33 @@ export const getProfile = async (uid) => {
 };
 
 // ============================================================
-// TA / Mentee 身份標記（support pairing 主資料）
+// Mentor / Mentee 身份標記（support pairing 主資料）
 // ============================================================
-const LOCAL_TA_PREFIX = `berkeley_ta_${APP_ID}_`;
-const taRef = (uid) => doc(db, 'platforms', APP_ID, 'tas', uid);
-const taLocalStorageKey = (uid) => `${LOCAL_TA_PREFIX}${uid}`;
 
-const defaultTA = () => ({
-  isTA: false,
+const mentorCollectionRef = (uid) => doc(db, 'platforms', APP_ID, 'mentors', uid);
+const mentorLocalStorageKey = (uid) => `${LOCAL_MENTOR_PREFIX}${uid}`;
+
+const defaultMentor = () => ({
+  isMentor: false,
   bio: '',
   slots: [],
   assignedStudents: [],
   updatedAt: new Date().toISOString(),
 });
 
-/** Register or update TA profile. @returns {Promise<any>} */
-export const upsertTAProfile = async (uid, updates = {}) => {
-  const payload = defaultTA();
+/** Register or update mentor profile. @returns {Promise<any>} */
+export const upsertMentorProfile = async (uid, updates = {}) => {
+  const payload = defaultMentor();
   let current = null;
 
   if (useFirebase && db) {
-    const snap = await getDoc(taRef(uid));
-    if (snap.exists()) current = snap.data();
+    const snap = await getDoc(mentorCollectionRef(uid));
+    if (snap.exists()) {
+      current = snap.data();
+    }
   } else {
     try {
-      current = JSON.parse(localStorage.getItem(taLocalStorageKey(uid)) || '{}');
+      current = JSON.parse(localStorage.getItem(mentorLocalStorageKey(uid)) || '{}');
     } catch {
       current = {};
     }
@@ -427,36 +427,31 @@ export const upsertTAProfile = async (uid, updates = {}) => {
 
   const next = { ...current, ...updates, updatedAt: new Date().toISOString() };
   if (useFirebase && db) {
-    await setDoc(taRef(uid), next, { merge: true });
+    await setDoc(mentorCollectionRef(uid), next, { merge: true });
   } else {
-    localStorage.setItem(taLocalStorageKey(uid), JSON.stringify(next));
+    localStorage.setItem(mentorLocalStorageKey(uid), JSON.stringify(next));
   }
 
-  emitTelemetry('ta_upsert', { uid, isTA: next.isTA });
+  emitTelemetry('mentor_upsert', { uid, isMentor: next.isMentor });
   return next;
 };
 
-/** Get TA profile. @returns {Promise<any>} */
-export const getTAProfile = async (uid) => {
+export const getMentorProfile = async (uid) => {
   if (!uid) return null;
   if (useFirebase && db) {
-    const snap = await getDoc(taRef(uid));
-    if (snap.exists()) return snap.data();
+    const snap = await getDoc(mentorCollectionRef(uid));
+    if (snap.exists()) {
+      return snap.data();
+    }
     return null;
   }
 
   try {
-    return JSON.parse(localStorage.getItem(taLocalStorageKey(uid)) || '{}');
+    return JSON.parse(localStorage.getItem(mentorLocalStorageKey(uid)) || '{}');
   } catch {
     return null;
   }
 };
-
-export const setCurrentRole = (role) => {
-  emitTelemetry('role_set', { role });
-};
-
-export const getCurrentRole = () => role || 'student';
 
 // ============================================================
 // Pairing：助教 -> 學員配對
@@ -470,7 +465,7 @@ export const PAIRING_STATUS = Object.freeze({
 });
 
 export const PAIRING_ROLE = Object.freeze({
-  TA: 'ta',
+  MENTOR: 'mentor',
   MENTEE: 'mentee',
 });
 
@@ -666,8 +661,7 @@ export const subscribePairings = (onData) => {
   return () => pairingLocalListeners.delete(next);
 };
 
-/** Load all pairings from localStorage. @returns {any[]} */
-const loadAllPairingsLocal = () => {
+function loadAllPairingsLocal() {
   const out = [];
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
@@ -679,10 +673,12 @@ const loadAllPairingsLocal = () => {
       // ignore broken record
     }
   }
-  return out.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
-};
+  return out;
+}
 
-const pairingCollectionLocalStoragePrefix = () => `${LOCAL_PAIRING_PREFIX}_`;
+function pairingCollectionLocalStoragePrefix() {
+  return `${LOCAL_PAIRING_PREFIX}_`;
+}
 
 // ============================================================
 // Oracle Always Free proxy helpers（optional）
@@ -698,7 +694,7 @@ const isOracleEnabled = () => USE_ORACLE && Boolean(ORACLE_API_BASE);
 /**
  * 預留 Oracle adapter：把 whatever export/import 需求做 proxy 化。
  * 目前不會主動叫 Oracle，僅符合「永遠可控」的設計。
- *
+ * 
  * export const exportToOracleCsv = async (records, locale = 'zh-TW') => {
  *   if (!isOracleEnabled()) {
  *     throw new Error('Oracle proxy 未啟用');
