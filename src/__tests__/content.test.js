@@ -25,10 +25,8 @@ describe('i18n translations', () => {
 
   it('should have known keys in zh-TW', () => {
     const t = translations['zh-TW'];
-    expect(t.heroTitleLine1a).toBe('2026 Berkeley');
-    expect(t.heroTitleLine1b).toBe('柏克萊國際永續策略');
-    expect(t.heroTitleLine2a).toBe('Berkeley');
-    expect(t.heroTitleLine2b).toBe('人才培育課程學習中心');
+    expect(t.heroTitleLine1).toBe('2026 Berkeley 柏克萊國際永續策略');
+    expect(t.heroTitleLine2).toBe('Berkeley 人才培育課程學習中心');
     expect(t.footer).toBe('2026 Berkeley柏克萊國際永續策略人才培育課程學習中心 | 柏克萊國際策略與創新 ESG 人才培育課程');
     expect(t.brandName).toBe('Berkeley柏克萊國際永續策略人才培育課程學習中心');
   });
