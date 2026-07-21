@@ -563,7 +563,7 @@ export default function App() {
         </div>
       )}
       {profileSetup && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => {}}>
           <form onSubmit={async (e) => {
             e.preventDefault();
             try {
@@ -571,11 +571,11 @@ export default function App() {
               await upsertUserProfile(user.uid, { displayName: profileForm.displayName, email: profileForm.email, org: profileForm.org, });
               setProfileSetup(false);
             } catch (err) { console.error('Profile setup error:', err); }
-          }} className="bg-white rounded-xl shadow-xl border border-slate-200 max-w-sm w-full p-6 flex flex-col gap-3">
+          }} className="bg-white rounded-xl shadow-xl border border-slate-200 max-w-sm w-full p-6 flex flex-col gap-3" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-bold text-[#003262]">{t.auth?.setupProfile || '個人資料設定'}</h3>
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-1">{t.auth?.displayName || '顯示名稱'}</label>
-              <input type="text" required value={profileForm.displayName} onChange={(e) => setProfileForm((prev) => ({ ...prev, displayName: e.target.value }))} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-[#003262] outline-none" />
+              <input autoFocus type="text" required value={profileForm.displayName} onChange={(e) => setProfileForm((prev) => ({ ...prev, displayName: e.target.value }))} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-[#003262] outline-none" />
             </div>
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-1">{t.auth?.email || 'Email'}</label>
