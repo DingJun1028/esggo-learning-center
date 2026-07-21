@@ -461,7 +461,7 @@ export default function App() {
 
           <div className="mt-8 sm:mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
             <CardLink href="https://drive.google.com/drive/folders/1-ZOC6sPNGISeD7Rf6lYT3Q10yYZaTdAy?usp=drive_link" icon={<BookOpen size={28} />} title={t.f1} />
-            <CardLink href="https://docs.google.com/forms/d/e/1FAIpQLSeLEij5XZ1TtBqxHYoNAx22QCSvfr-WPg0yp26hceq6d_ZMWg/viewform" icon={<Upload size={28} />} title={t.f2} />
+            <CardLink href="https://forms.gle/B5hSmQSBi3t24Tn38" icon={<Upload size={28} />} title={t.f2} />
             <CardAction onClick={() => setView('replay')} icon={<PlayCircle size={28} />} title={t.f3} />
             <CardLink href="https://docs.google.com/forms/d/e/1FAIpQLSeLEij5XZ1TtBqxHYoNAx22QCSvfr-WPg0yp26hceq6d_ZMWg/viewform" icon={<Smile size={28} />} title={t.f6} />
           </div>
