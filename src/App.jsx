@@ -452,7 +452,7 @@ export default function App() {
         <div className="max-w-5xl mx-auto mb-10">
           <div className="bg-[#003262] rounded-2xl p-6 sm:p-10 md:p-14 text-center shadow-lg relative overflow-hidden border-b-4 border-[#FDB515]">
             <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-[#FDB515] rounded-full opacity-10 blur-3xl"></div>
-            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-white mb-3 relative z-10 font-serif tracking-tight leading-[1.5]">{t.heroTitleLine1}<br className="hidden sm:inline" />{t.heroTitleLine2}</h2>
+            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-white mb-3 relative z-10 font-serif tracking-tight leading-[1.6]">{t.heroTitleLine1}<br className="hidden sm:inline" />{t.heroTitleLine2}</h2>
           </div>
 
           <div className="mt-8 sm:mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
