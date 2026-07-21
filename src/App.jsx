@@ -43,6 +43,12 @@ import {
   listPairingsForMentor, acceptPairing, declinePairing,
   subscribePairings, createPairingRequest, removePairing, PAIRING_STATUS
 } from './repositories/pairing.repository';
+import {
+  BookOpen, Upload, PlayCircle, CalendarCheck, MessageCircleQuestion, Smile,
+  Database, ShieldCheck, ArrowLeft, Send, ChevronDown, ChevronUp, FileText,
+  Globe, Search, Download, Trash2, Filter, X, Users, LogIn, LogOut,
+  User, UserPlus, Check, XCircle
+} from 'lucide-react';
 import translations from './i18n/translations';
 
 // --- 管理員密碼（輕量保護，見 docs/FIREBASE_SETUP.md 說明）---
