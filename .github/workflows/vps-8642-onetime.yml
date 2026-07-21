@@ -1,0 +1,27 @@
+name: vps-8642-onetime
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  direct:
+    runs-on: ubuntu-latest
+    env:
+      VPS_HOST: ${{ secrets.VPS_HOST }}
+      VPS_USER: ${{ secrets.VPS_USER }}
+      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      OCI_TENANCY_OCID: ${{ secrets.OCI_TENANCY_OCID }}
+      OCI_USER_OCID: ${{ secrets.OCI_USER_OCID }}
+      OCI_FINGERPRINT: ${{ secrets.OCI_API_FINGERPRINT }}
+      OCI_REGION: ${{ secrets.OCI_REGION }}
+      OCI_BASTION_ID: ${{ secrets.OCI_BASTION_ID }}
+      OCI_TARGET_RESOURCE_ID: ${{ secrets.OCI_TARGET_RESOURCE_ID }}
+    steps:
+      - name: Show target host placeholder
+        run: |
+          echo "VPS_HOST=${VPS_HOST:-<empty>}"
+          echo "VPS_USER=${VPS_USER:-<empty>}"
+          echo "OCI_REGION=${OCI_REGION:-<empty>}"
+          echo "OCI_TERMINAL_HOST=${OCI_TERMINAL_HOST:-<empty>}"
