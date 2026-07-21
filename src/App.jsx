@@ -1,5 +1,37 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { BookOpen, Upload, PlayCircle, CalendarCheck, MessageCircleQuestion, Smile, Database, ShieldCheck, ArrowLeft, Send, ChevronDown, ChevronUp, FileText, Globe, Search, Download, Trash2, Filter, X, Users, LogIn, LogOut, User, UserPlus, Check, XCircle } from 'lucide-react';
+import React, { useState, useEffect, useRef, Component } from 'react';
+
+// 防止元件 throw 造成全白畫面：將錯誤渲染在畫面上，而非整個 app 消失。
+class ErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { error };
+  }
+  componentDidCatch(error, info) {
+    console.error('[ErrorBoundary]', error, info.componentStack);
+  }
+  render() {
+    const { error } = this.state;
+    const { children } = this.props;
+    if (error) {
+      return (
+        <div className="min-h-screen bg-red-50 text-red-900 p-6">
+          <div className="max-w-3xl mx-auto bg-white border border-red-200 rounded-xl shadow-sm p-6">
+            <h2 className="text-lg font-bold mb-2">發生未預期的錯誤</h2>
+            <pre className="text-xs bg-red-50 border border-red-200 rounded-lg p-4 whitespace-pre-wrap font-mono">
+              {error?.message}
+              {'\n'}
+              {error?.stack}
+            </pre>
+          </div>
+        </div>
+      );
+    }
+    return children;
+  }
+}
 import {
   useFirebase, initAuth, subscribeSubmissions, addSubmission, deleteSubmission,
   uploadFiles, signInWithGoogle, signOut
@@ -558,44 +590,55 @@ export default function App() {
 
   // 角色切換（基於 Firebase claims；admin/TA 需要 Google 登入後的 claims 驗證，密碼作為 fallback）
   const trySwitchRole = async (next) => {
-      if (next === 'student') {
-        setRole('student'); setView('home'); return;
-      }
-      try {
-        if (next === 'admin' && user && !user.isLocal && !user.isAnonymous && user.uid === ADMIN_UID) {
-          setRole('admin'); setView('admin'); return;
-        }
-        if (user && !user.isLocal && !user.isAnonymous) {
-          const claimsRole = await refreshRoleFromClaims(user);
-          if ((next === 'admin' && claimsRole === 'admin') || (next === 'TA' && (claimsRole === 'TA' || claimsRole === 'admin'))) {
-            setRole(next); setView(next === 'admin' ? 'admin' : 'ta'); return;
-          }
-          if (next === 'admin') {
-            if (adminOk) { setRole('admin'); setView('admin'); return; }
-            setAdminPrompt(true); return;
-          }
-          alert(t.auth?.noPermission || '您的帳號無此權限，請聯繫管理員。'); return;
-        }
+    if (next === 'student') {
+      setRole('student');
+      setView('home');
+      return;
+    }
+    try {
+      if (!user || user.isLocal || user.isAnonymous) {
         if (next === 'admin') {
-          if (adminOk) { setRole('admin'); setView('admin'); return; }
-          setAdminPrompt(true); return;
+          setAdminPrompt(true);
+          return;
         }
-        alert(t.auth?.signInRequired || '請先使用 Google 登入');
-      } catch (err) {
-        console.error('[role-switch]', err);
-        if (next === 'admin') {
-          if (adminOk) { setRole('admin'); setView('admin'); return; }
-          setAdminPrompt(true); return;
-        }
-        alert(t.auth?.noPermission || '切換角色失敗，請稍後再試。');
+        setAuthMessage(t.auth?.signInRequired || '請先使用 Google 登入');
+        return;
       }
-    };
+      if (user.uid === ADMIN_UID) {
+        setRole('admin');
+        setView('admin');
+        return;
+      }
+      const claimsRole = await refreshRoleFromClaims(user);
+      if ((next === 'admin' && claimsRole === 'admin') || (next === 'TA' && (claimsRole === 'TA' || claimsRole === 'admin'))) {
+        setRole(next);
+        setView(next === 'admin' ? 'admin' : 'ta');
+        return;
+      }
+      if (next === 'admin' && adminOk) {
+        setRole('admin');
+        setView('admin');
+        return;
+      }
+      if (next === 'admin') {
+        setAdminPrompt(true);
+        return;
+      }
+      setAuthMessage(t.auth?.noPermission || '您的帳號無此權限，請聯繫管理員。');
+    } catch (err) {
+      console.error('[role-switch]', err);
+      setAuthMessage(t.auth?.noPermission || '切換角色失敗，請稍後再試。');
+    }
+  };
+
   const confirmAdmin = () => {
     if (!ADMIN_PASS || adminInput === ADMIN_PASS) {
       setAdminOk(true);
       setRole('admin');
       setView('admin');
-    } else alert(t.admin?.wrongPassword || t.error?.adminWrongPassword || '管理員密碼錯誤');
+    } else {
+      alert(t.admin?.wrongPassword || t.error?.adminWrongPassword || '管理員密碼錯誤');
+    }
     setAdminPrompt(false);
     setAdminInput('');
   };
