@@ -437,6 +437,76 @@ const RecordsView = ({ data, isAdmin, t, lang }) => {
   );
 };
 
+const LayoutShell = ({ role, setRole, trySwitchRole, lang, setLang, user, handleSignOut, profileMenuOpen, setProfileMenuOpen, children }) => {
+  const t = translations[lang];
+  const brand = (
+    <div className="flex items-center gap-3">
+      <div className="w-9 h-9 rounded-lg bg-[#003262] text-white flex items-center justify-center font-bold text-sm shadow-sm">E</div>
+      <div className="leading-tight">
+        <div className="text-sm font-bold text-[#003262]">ESGGO</div>
+        <div className="text-[11px] text-slate-400 font-medium tracking-wide">5T 永續治理</div>
+      </div>
+    </div>
+  );
+  return (
+    <div className="min-h-screen bg-slate-50 font-sans text-slate-800">
+      <nav className="bg-white/80 backdrop-blur border-b border-slate-200 px-4 sm:px-6 py-3 sticky top-0 z-50">
+        <div className="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-2">
+          {brand}
+          <div className="flex items-center gap-2">
+            <select value={lang} onChange={(e) => setLang(e.target.value)} className="bg-slate-100 border-none text-xs font-bold text-[#003262] rounded-md py-1.5 px-2 outline-none cursor-pointer hover:bg-slate-200 transition-colors">
+              <option value="zh-TW">繁體中文</option>
+              <option value="zh-CN">简体中文</option>
+              <option value="en">EN</option>
+            </select>
+            <select value={role} onChange={(e) => trySwitchRole(e.target.value)} className="bg-[#FDB515]/10 border border-[#FDB515]/30 text-xs font-bold text-[#b47b00] rounded-md py-1.5 px-2 outline-none cursor-pointer hover:bg-[#FDB515]/20 transition-colors">
+              <option value="student">學生</option>
+              <option value="TA">TA</option>
+              <option value="admin">管理員</option>
+            </select>
+            {!user ? (
+              <button onClick={() => setView('auth')} className="inline-flex items-center gap-2 bg-[#003262] text-white px-3 py-1.5 rounded-md text-xs font-bold hover:bg-[#002244] transition-colors shadow-sm">登入</button>
+            ) : (
+              <div className="relative">
+                <button onClick={() => setProfileMenuOpen((v) => !v)} className="inline-flex items-center gap-2 bg-slate-100 text-[#003262] px-3 py-1.5 rounded-md text-xs font-bold hover:bg-slate-200 transition-colors">
+                  <img src={user.photoURL} alt="" className="w-5 h-5 rounded-full" referrerPolicy="no-referrer" />
+                  <span className="max-w-[120px] truncate">{user.displayName || user.email}</span>
+                </button>
+                {profileMenuOpen && (
+                  <div className="absolute right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg w-56 z-[60] overflow-hidden">
+                    <div className="px-4 py-3 border-b border-slate-100">
+                      <div className="text-sm font-bold text-[#003262] truncate">{user.displayName || ''}</div>
+                      <div className="text-xs text-slate-400 truncate">{user.email || ''}</div>
+                    </div>
+                    <button onClick={handleSignOut} className="w-full px-4 py-3 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors">登出</button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </nav>
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 mt-2">{children}</main>
+      <footer className="border-t border-slate-200 bg-white mt-10">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-md bg-[#003262] text-white flex items-center justify-center font-bold text-xs shadow-sm">E</div>
+            <div className="text-xs text-slate-500">ESGGO 善向永續 · Berkeley Haas x TSISDA · {t.footer || '2026 國際永續策略人才培訓課程'}</div>
+          </div>
+          <div className="flex items-center gap-2 text-[11px] text-slate-400 font-mono">
+            <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-[#FDB515]/10 text-[#b47b00] font-bold">T1</span>
+            <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-[#FDB515]/10 text-[#b47b00] font-bold">T2</span>
+            <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-[#FDB515]/10 text-[#b47b00] font-bold">T3</span>
+            <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-[#FDB515]/10 text-[#b47b00] font-bold">T4</span>
+            <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-[#FDB515]/10 text-[#b47b00] font-bold">T5</span>
+            <span className="ml-1">5T Integrity v1.1</span>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+};
+
 export default function App() {
   const [lang, setLang] = useState('zh-TW');
   const [view, setView] = useState('home');
@@ -882,183 +952,121 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans text-slate-800 pb-20">
-      <nav className="bg-white border-b border-slate-200 px-4 sm:px-6 py-3 sm:py-4 flex flex-wrap justify-between items-center gap-2 sm:gap-4 sticky top-0 z-50 shadow-sm">
-        <div className="flex items-center gap-4">
-          <a href="https://www.imagebam.com/view/ME18KXOM" target="_blank" rel="noreferrer" className="block">
-            <img src="https://thumbs4.imagebam.com/a0/d6/d4/ME18KXOM_t.png" alt="Logo" className="w-10 h-10 rounded-lg shadow-md object-cover" />
-          </a>
-          {view !== 'home' && (
-            <button onClick={() => setView('home')} className="text-sm font-bold text-slate-500 hover:text-[#003262] flex items-center gap-1 transition-colors bg-slate-100 px-3 py-1.5 rounded-md hover:bg-slate-200">
-              <ArrowLeft size={16} /> {t.back}
-            </button>
-          )}
-        </div>
-        <div className="flex items-center gap-2 sm:gap-3 flex-wrap justify-end">
-          <select value={lang} onChange={(e) => setLang(e.target.value)} className="bg-slate-100 border-none text-sm font-semibold text-[#003262] rounded-lg py-2 px-3 outline-none cursor-pointer hover:bg-slate-200 transition-colors">
-            <option value="zh-TW">繁體中文</option>
-            <option value="zh-CN">简体中文</option>
-          </select>
-          <select value={role} onChange={(e) => trySwitchRole(e.target.value)} className="bg-[#FDB515]/10 border border-[#FDB515]/30 text-sm font-semibold text-[#b47b00] rounded-lg py-2 px-3 outline-none cursor-pointer hover:bg-[#FDB515]/20 transition-colors">
-            <option value="student">{t.roleStudent}</option>
-            <option value="TA">{t.roleTA}</option>
-            <option value="admin">{t.roleAdmin}</option>
-          </select>
-          {role === 'student' && (
-            <>
-              <button onClick={() => setView('records')} className="flex items-center gap-2 bg-[#003262] text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-[#002244] transition-colors shadow-sm">
-                <Database size={16} /> <span className="hidden sm:inline">{t.myRecords}</span>
-              </button>
-              <button onClick={() => setView('knowledge')} className="flex items-center gap-2 bg-white text-[#003262] border border-[#003262] px-4 py-2 rounded-lg text-sm font-bold hover:bg-slate-50 transition-colors shadow-sm">
-                <Globe size={16} /> <span className="hidden sm:inline">{t.knowledge || '知識查詢'}</span>
-              </button>
-            </>
-          )}
-          {role === 'TA' && (
-            <>
-              <button onClick={() => setView('ta')} className="flex items-center gap-2 bg-white text-[#003262] border border-[#003262] px-4 py-2 rounded-lg text-sm font-bold hover:bg-slate-50 transition-colors shadow-sm">
-                <Users size={16} /> <span className="hidden sm:inline">{t.taPanel || 'TA 助教視角'}</span>
-              </button>
-              <button onClick={() => setView('knowledge')} className="flex items-center gap-2 bg-white text-[#003262] border border-[#003262] px-4 py-2 rounded-lg text-sm font-bold hover:bg-slate-50 transition-colors shadow-sm">
-                <Globe size={16} /> <span className="hidden sm:inline">{t.knowledge || '知識查詢'}</span>
-              </button>
-            </>
-          )}
-          {role === 'admin' && (
-            <>
-              <button onClick={() => setView('admin')} className="flex items-center gap-2 bg-[#FDB515] text-[#003262] px-4 py-2 rounded-lg text-sm font-bold hover:bg-[#e5a213] transition-colors shadow-sm">
-                <ShieldCheck size={16} /> <span className="hidden sm:inline">{t.admin}</span>
-              </button>
-              <button onClick={() => setView('knowledge')} className="flex items-center gap-2 bg-white text-[#003262] border border-[#003262] px-4 py-2 rounded-lg text-sm font-bold hover:bg-slate-50 transition-colors shadow-sm">
-                <Globe size={16} /> <span className="hidden sm:inline">{t.knowledge || '知識查詢'}</span>
-              </button>
-              <button onClick={() => setView('auth')} className="flex items-center gap-2 bg-white text-[#003262] border border-[#003262] px-4 py-2 rounded-lg text-sm font-bold hover:bg-slate-50 transition-colors shadow-sm">
-                <ShieldCheck size={16} /> <span className="hidden sm:inline">{t.authPanel || '授權設定'}</span>
-              </button>
-            </>
-          )}
-
-          {/* 用戶登入/登出狀態 */}
-          <div className="relative" ref={profileMenuRef}>
-            {user && !user.isLocal && !user.isAnonymous ? (
-              <button
-                onClick={() => setProfileMenuOpen(!profileMenuOpen)}
-                className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-[#003262] px-3 py-2 rounded-lg text-sm font-semibold transition-colors"
-                title={user.email || user.displayName || ''}
-              >
-                {user.photoURL ? (
-                  <img src={user.photoURL} alt="" className="w-6 h-6 rounded-full" referrerPolicy="no-referrer" />
-                ) : (
-                  <User size={16} />
-                )}
-                <span className="hidden sm:inline max-w-[100px] truncate">{user.displayName || user.email?.split('@')[0] || ''}</span>
-                <ChevronDown size={14} />
-              </button>
-            ) : (
-              <button
-                onClick={handleGoogleSignIn}
-                className="flex items-center gap-2 bg-[#003262] text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-[#002244] transition-colors shadow-sm"
-              >
-                <LogIn size={16} /> <span className="hidden sm:inline">{t.auth?.signInGoogle || 'Google 登入'}</span>
-              </button>
-            )}
-            {/* 個人選單下拉 */}
-            {profileMenuOpen && user && !user.isLocal && !user.isAnonymous && (
-              <div className="absolute right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg w-56 z-[60] overflow-hidden" onClick={() => setProfileMenuOpen(false)}>
-                <div className="px-4 py-3 border-b border-slate-100">
-                  <div className="text-sm font-bold text-[#003262] truncate">{user.displayName || ''}</div>
-                  <div className="text-xs text-slate-400 truncate">{user.email || ''}</div>
-                  <div className="mt-1 text-[10px] font-semibold text-[#b47b00] bg-[#FDB515]/15 inline-block px-2 py-0.5 rounded">{t[`role${role === 'admin' ? 'Admin' : role === 'TA' ? 'TA' : 'Student'}`] || role}</div>
-                </div>
-                <button
-                  onClick={async () => { await handleSignOut(); setProfileMenuOpen(false); }}
-                  className="w-full px-4 py-3 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors"
-                >
-                  <LogOut size={16} /> {t.auth?.signOut || '登出'}
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      </nav>
-
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 mt-2 text-[10px] text-slate-400">
+    <LayoutShell
+      role={role}
+      setRole={setRole}
+      trySwitchRole={trySwitchRole}
+      lang={lang}
+      setLang={setLang}
+      user={user}
+      handleSignOut={handleSignOut}
+      profileMenuOpen={profileMenuOpen}
+      setProfileMenuOpen={setProfileMenuOpen}
+    >
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 mt-1 text-[10px] text-slate-400">
         {useFirebase ? t.list.storageMode : t.list.localMode}
       </div>
-
-      <main className="p-4 sm:p-6">
-        {error && (
-          <div className="max-w-5xl mx-auto mb-6">
-            <div className="bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl p-4 whitespace-pre-wrap font-mono">
-              {typeof error === 'string' ? error : JSON.stringify(error, null, 2)}
-            </div>
+      {error && (
+        <div className="max-w-5xl mx-auto mb-6">
+          <div className="bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl p-4 whitespace-pre-wrap font-mono">
+            {typeof error === 'string' ? error : JSON.stringify(error, null, 2)}
           </div>
-        )}
-        {authError && (
-          <div className="max-w-5xl mx-auto mb-6">
-            <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl p-4">
-              <span className="font-bold">登入錯誤：</span>
-              <span className="font-mono">{authError}</span>
-              <button onClick={clearAuthError} className="ml-3 underline text-xs font-semibold">清除</button>
-            </div>
+        </div>
+      )}
+      {authError && (
+        <div className="max-w-5xl mx-auto mb-6">
+          <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl p-4">
+            <span className="font-bold">登入錯誤：</span>
+            <span className="font-mono">{authError}</span>
+            <button onClick={clearAuthError} className="ml-3 underline text-xs font-semibold">清除</button>
           </div>
-        )}
-        {view === 'home' && (
-          <div className="max-w-5xl mx-auto mb-10">
-            <div className="bg-[#003262] rounded-2xl p-6 sm:p-10 md:p-16 text-center shadow-lg relative overflow-hidden border-b-4 border-[#FDB515]">
-              <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-[#FDB515] rounded-full opacity-10 blur-3xl"></div>
-              <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-white mb-4 relative z-10 font-serif tracking-tight leading-tight">{t.heroTitle}</h1>
-              <div className="relative z-10 bg-white rounded-xl border border-slate-200 overflow-hidden shadow-lg text-left">
-                <div className="flex items-center gap-2 bg-slate-100 border-b border-slate-200 px-4 py-2">
-                  <span className="text-xs font-bold text-slate-500">{t.heroCta}</span>
-                  <span className="text-[10px] text-slate-400 truncate">https://corporateinnovation.berkeley.edu/students/business-model-practicum-2026/</span>
-                </div>
-                <iframe
-                  src="https://corporateinnovation.berkeley.edu/students/business-model-practicum-2026/"
-                  title={t.heroTitle}
-                  className="w-full border-0"
-                  style={{ height: '72vh', minHeight: 420 }}
-                  sandbox="allow-scripts allow-same-origin"
-                  referrerPolicy="no-referrer"
-                >
-                  <div className="p-6 text-sm text-slate-600">您的瀏覽器不支援嵌入頁面，請<a href="https://corporateinnovation.berkeley.edu/students/business-model-practicum-2026/" target="_blank" rel="noreferrer" className="text-[#003262] underline font-semibold">前往 2026 Berkeley柏克萊國際永續策略人才培育課程學習中心</a>。</div>
-                </iframe>
+        </div>
+      )}
+      {view === 'home' && (
+        <div className="max-w-5xl mx-auto mb-10">
+          <div className="bg-[#003262] rounded-2xl p-6 sm:p-10 md:p-16 text-center shadow-lg relative overflow-hidden border-b-4 border-[#FDB515]">
+            <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-[#FDB515] rounded-full opacity-10 blur-3xl"></div>
+            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-white mb-4 relative z-10 font-serif tracking-tight leading-tight">{t.heroTitle}</h1>
+            <div className="relative z-10 bg-white rounded-xl border border-slate-200 overflow-hidden shadow-lg text-left">
+              <div className="flex items-center gap-2 bg-slate-100 border-b border-slate-200 px-4 py-2">
+                <span className="text-xs font-bold text-slate-500">{t.heroCta}</span>
+                <span className="text-[10px] text-slate-400 truncate">https://corporateinnovation.berkeley.edu/students/business-model-practicum-2026/</span>
               </div>
+              <iframe
+                src="https://corporateinnovation.berkeley.edu/students/business-model-practicum-2026/"
+                title={t.heroTitle}
+                className="w-full border-0"
+                style={{ height: '72vh', minHeight: 420 }}
+                sandbox="allow-scripts allow-same-origin"
+                referrerPolicy="no-referrer"
+              ></iframe>
             </div>
           </div>
-        )}
+        </div>
+      )}
 
-        {view === 'home' && <HomeView />}
-        {['upload', 'booking', 'question', 'survey'].includes(view) && <DynamicForm type={view} />}
-        {view === 'replay' && replayView === 'list' && <ReplayListView t={t} videos={replayVideos} onSelect={(v) => { setSelectedVideo(v); setReplayView('player'); }} />}
-        {view === 'replay' && replayView === 'player' && selectedVideo && <ReplayPlayerView t={t} video={selectedVideo} onBack={() => setReplayView('list')} />}
+      {view === 'home' && <HomeView />}
+      {['upload', 'booking', 'question', 'survey'].includes(view) && <DynamicForm type={view} />}
+      {view === 'replay' && replayView === 'list' && <ReplayListView t={t} videos={replayVideos} onSelect={(v) => { setSelectedVideo(v); setReplayView('player'); }} />}
+      {view === 'replay' && replayView === 'player' && selectedVideo && <ReplayPlayerView t={t} video={selectedVideo} onBack={() => setReplayView('list')} />}
 
-        {view === 'records' && role === 'student' && (
-          <>
-            <h2 className="text-xl sm:text-2xl font-bold text-[#003262] max-w-5xl mx-auto mb-4 sm:mb-6 flex items-center gap-3"><Database className="text-[#FDB515]" /> {t.myRecords}</h2>
-            <RecordsView data={submissions.filter(s => s.userId === user?.uid)} isAdmin={false} t={t} lang={lang} />
-          </>
-        )}
-
-        {view === 'ta' && role === 'TA' && (
-          <div className="max-w-5xl mx-auto">
-            <h2 className="text-xl sm:text-2xl font-bold text-[#003262] mb-4 sm:mb-6 flex items-center gap-3"><Users className="text-[#FDB515]" /> {t.taPanel || 'TA 助教視角'}</h2>
-
-            {/* Pairing List */}
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 sm:p-6 mb-6">
-              <h3 className="text-lg font-bold text-[#003262] mb-4 flex items-center gap-2"><Users size={18} /> {t.pairings?.listTitle || '配對名冊'}</h3>
-              {taPairingsLoading ? (
-                <div className="text-sm text-slate-400 py-4 text-center">Loading...</div>
-              ) : taPairings.length === 0 ? (
-                <div className="text-sm text-slate-400 py-4 text-center">{t.pairings?.empty || '目前尚無配對資料'}</div>
-              ) : (
-                <div className="flex flex-col gap-3">
-                  {taPairings.map(p => {
-                    const statusLabel = p.status === PAIRING_STATUS.ASSIGNED ? t.pairings?.statusAssigned
-                      : p.status === PAIRING_STATUS.PENDING ? t.pairings?.statusPending
-                      : p.status === PAIRING_STATUS.DECLINED ? t.pairings?.statusDeclined : p.status;
-                    const statusColor = p.status === PAIRING_STATUS.ASSIGNED ? 'bg-green-100 text-green-700 border-green-200'
-                      : p.status === PAIRING_STATUS.PENDING ? 'bg-yellow-100 text-yellow-700 border-yellow-200'
+      {view === 'records' && role === 'student' && (
+        <>
+          <h2 className="text-xl sm:text-2xl font-bold text-[#003262] max-w-5xl mx-auto mb-4 sm:mb-6 flex items-center gap-3"><Database className="text-[#FDB515]" /> {t.myRecords}</h2>
+          <RecordsView data={submissions.filter(s => s.userId === user?.uid)} isAdmin={false} t={t} lang={lang} />
+        </>
+      )}
+      {view === 'ta' && (
+        <>
+          <h2 className="text-xl sm:text-2xl font-bold text-[#003262] max-w-5xl mx-auto mb-4 sm:mb-6 flex items-center gap-3"><Users className="text-[#FDB515]" /> {t.taPanel || 'TA 助教視角'}</h2>
+          <TaView />
+        </>
+      )}
+      {view === 'admin' && (
+        <>
+          <h2 className="text-xl sm:text-2xl font-bold text-[#003262] max-w-5xl mx-auto mb-4 sm:mb-6 flex items-center gap-3"><ShieldCheck className="text-[#FDB515]" /> {t.admin}</h2>
+          <AdminView />
+        </>
+      )}
+      {view === 'auth' && role === 'admin' && (
+        <div className="max-w-3xl mx-auto bg-white p-5 sm:p-8 rounded-xl shadow-sm border border-slate-100">
+          <h2 className="text-xl sm:text-2xl font-bold text-[#003262] mb-4 flex items-center gap-3"><ShieldCheck className="text-[#FDB515]" /> {t.authPanel || '授權設定'}</h2>
+          <div className="flex flex-col gap-3">
+            <button onClick={handleGoogleSignIn} className="bg-[#003262] text-white font-bold py-3 rounded-lg hover:bg-[#002244] transition-colors">{t.auth.signInGoogle}</button>
+            <button onClick={handleSignOut} className="bg-slate-100 text-slate-700 font-bold py-3 rounded-lg hover:bg-slate-200 transition-colors">{t.auth.signOut}</button>
+            {user && (
+              <p className="text-xs text-slate-500">已登入：{user.displayName || user.email || user.uid}</p>
+            )}
+          </div>
+        </div>
+      )}
+      {view === 'knowledge' && (
+        <div className="max-w-4xl mx-auto bg-white p-5 sm:p-8 rounded-xl shadow-sm border border-slate-100">
+          <h2 className="text-xl sm:text-2xl font-bold text-[#003262] mb-4 flex items-center gap-3"><Globe className="text-[#FDB515]" /> {t.knowledge || '知識查詢'}</h2>
+          <div className="flex flex-col gap-3 mb-4">
+            <div className="flex gap-2">
+              <input
+                value={knowledgeQuery}
+                onChange={(e) => setKnowledgeQuery(e.target.value)}
+                placeholder={t.knowledgeSearchPlaceholder || '請輸入關鍵字...'}
+                className="flex-1 border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-[#003262]"
+              />
+              <button onClick={handleKnowledgeSearch} className="bg-[#003262] text-white px-4 py-2 rounded-lg text-sm font-bold">搜尋</button>
+            </div>
+            {knowledgeEntries.length === 0 && <p className="text-sm text-slate-500">{t.knowledgeEmpty || '目前無可顯示知識條目。'}</p>}
+            {knowledgeEntries.map((entry) => (
+              <div key={entry.id} className="border border-slate-200 rounded-lg p-4">
+                <p className="text-sm font-bold text-[#003262]">{entry.title}</p>
+                <p className="text-xs text-slate-500 mt-1">{entry.body}</p>
+                {entry.tags?.length ? <p className="text-xs text-slate-400 mt-2">{entry.tags.join(', ')}</p> : null}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </LayoutShell>
+  );
+};
                       : 'bg-red-100 text-red-700 border-red-200';
                     const studentSubs = submissions.filter(s => s.userId === p.menteeUid);
                     return (
@@ -1215,8 +1223,6 @@ export default function App() {
         )}
       </main>
 
-      <footer className="text-center text-slate-400 text-xs mt-12 pb-6">{t.footer}</footer>
-
       {/* 管理員密碼提示 */}
       {adminPrompt && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[100] p-4" onClick={() => setAdminPrompt(false)}>
@@ -1289,6 +1295,6 @@ export default function App() {
           </div>
         </div>
       )}
-    </div>
+    </LayoutShell>
   );
 }
