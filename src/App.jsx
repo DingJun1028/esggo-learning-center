@@ -489,7 +489,25 @@ export default function App() {
         <div className="max-w-5xl mx-auto">
           <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-5 sm:p-8">
             <h2 className="text-2xl font-bold text-[#003262] mb-6">{t.forms[view]?.title || view}</h2>
-            <form onSubmit={(e) => handleSubmit(e, view, {})} className="flex flex-col gap-5">
+            <form onSubmit={(e) => {
+              const fd = { ...(view === 'question' ? {
+                submitterName: e.target.elements.questionSubmitterName?.value || '',
+                submitterEmail: e.target.elements.questionSubmitterEmail?.value || '',
+              } : {}) };
+              handleSubmit(e, view, fd);
+            }} className="flex flex-col gap-5">
+              {view === 'question' && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1">{t.question.fieldSubmitter || '提問人姓名'} <span className="text-red-500">*</span></label>
+                    <input required name="questionSubmitterName" type="text" className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-[#003262] outline-none" placeholder={t.question.fieldSubmitterPlaceholder || '您的姓名'} />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1">{t.question.fieldSubmitterEmail || '提問人 Email'} <span className="text-red-500">*</span></label>
+                    <input required name="questionSubmitterEmail" type="email" className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-[#003262] outline-none" placeholder={t.question.fieldSubmitterEmailPlaceholder || '您的 Email'} />
+                  </div>
+                </div>
+              )}
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1">{view === 'upload' ? t.forms.upload.file : view === 'booking' ? t.forms.booking.name : ''}</label>
                 <input required type="file" multiple onChange={() => {}} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-[#003262] outline-none file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-slate-100 file:text-[#003262] file:font-semibold hover:file:bg-slate-200" />
