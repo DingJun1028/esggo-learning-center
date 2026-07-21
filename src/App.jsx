@@ -182,8 +182,8 @@ const mockCases = [
 //    Google Drive 上的課程影片清單；若 URL 留空則退回 DEFAULT_REPLAY_VIDEOS。
 const REPLAY_SYNC = {
   ENABLED: true,
-  WEB_APP_URL: 'https://script.google.com/macros/s/AKfycby2B8BCe82UeRt7JXtn88z-9P8bL-DsoDe45uL1oPD8JWEej8qpikS5kEPIIo093noTTg/exec',
-  CACHE_TTL_MS: 5 * 60 * 1000
+  WEB_APP_URL: (import.meta.env.VITE_REPLAY_WEB_APP_URL || '').trim(),
+  CACHE_TTL_MS: 5 * 60 * 1000,
 };
 let __replayCache = null;
 const DEFAULT_REPLAY_VIDEOS = [
