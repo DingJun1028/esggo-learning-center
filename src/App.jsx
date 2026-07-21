@@ -452,7 +452,15 @@ export default function App() {
         <div className="max-w-5xl mx-auto mb-10">
           <div className="bg-[#003262] rounded-2xl p-6 sm:p-10 md:p-14 text-center shadow-lg relative overflow-hidden border-b-4 border-[#FDB515]">
             <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-[#FDB515] rounded-full opacity-10 blur-3xl"></div>
-            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-white mb-3 relative z-10 font-serif tracking-tight flex flex-col sm:flex-row sm:items-center gap-y-3 sm:gap-x-4 justify-center">{t.heroTitleLine1}<span className="hidden sm:inline text-white/80">/</span><span className="sm:hidden text-white/80">/</span>{t.heroTitleLine2}</h2>
+            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-white mb-3 relative z-10 font-serif tracking-tight leading-[1.6]">
+              <span className="block sm:inline">{t.heroTitleLine1a}</span>
+              <span className="hidden sm:inline text-white/50 mx-2 align-middle">|</span>
+              <span className="block sm:inline">{t.heroTitleLine1b}</span>
+              <br className="sm:hidden" />
+              <span className="block sm:inline">{t.heroTitleLine2a}</span>
+              <span className="hidden sm:inline text-white/50 mx-2 align-middle">|</span>
+              <span className="block sm:inline">{t.heroTitleLine2b}</span>
+            </h2>
           </div>
 
           <div className="mt-8 sm:mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
