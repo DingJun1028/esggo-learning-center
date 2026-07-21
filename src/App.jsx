@@ -9,7 +9,8 @@ import { getUserProfile, upsertUserProfile } from './repositories/profile.reposi
 import {
   BookOpen, Upload, PlayCircle, CalendarCheck, MessageCircleQuestion,
   Smile, Database, ShieldCheck, ArrowLeft, Send, ChevronDown, FileText,
-  Globe, Search, Trash2, Filter, X, Users, LogIn, LogOut, User
+  Globe, Search, Trash2, Filter, X, Users, LogIn, LogOut,
+  User, Download
 } from 'lucide-react';
 import translations from './i18n/translations';
 
