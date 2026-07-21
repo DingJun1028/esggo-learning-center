@@ -180,6 +180,9 @@ export const signInWithGoogle = async () => {
   } catch (error) {
     console.error('Google sign-in failed', error);
     emitTelemetry('sign_in_error', { code: error?.code });
+    if (String(error?.code) === 'auth/operation-not-allowed') {
+      throw new Error('Google 登入已停用：請至 Firebase Console → Authentication → Sign-in method 開啟 Google provider。');
+    }
     throw error;
   }
 };
