@@ -138,11 +138,11 @@ const ReplayListView = ({ t, videos, onSelect }) => {
 };
 
 const ReplayPlayerView = ({ t, video, onBack }) => (
-  <div className="max-w-5xl mx-auto">
+  <div className="max-w-5xl mx-auto" onContextMenu={(e) => e.preventDefault()}>
     <button onClick={onBack} className="text-sm font-bold text-[#003262] hover:underline mb-3 inline-flex items-center gap-1"><ArrowLeft size={16} /> {t.replay.backToList}</button>
-    <div className="bg-black rounded-xl overflow-hidden">
-      <video controls className="w-full aspect-video" preload="metadata" src={`https://drive.google.com/uc?export=download&id=${video.id}`} title={video.title}></video>
-      <div className="absolute bottom-2 right-3 text-white/60 text-xs pointer-events-none">{t.replay.watermark}</div>
+    <div className="relative bg-black rounded-xl overflow-hidden select-none">
+      <iframe src={`https://drive.google.com/file/d/${video.id}/preview`} className="w-full aspect-video" allow="autoplay" title={video.title}></iframe>
+      <div className="absolute bottom-2 right-3 text-white/60 text-xs pointer-events-none select-none">{t.replay.watermark}</div>
     </div>
     <div className="mt-3">
       <div className="text-xs font-bold text-[#b47b00]">{video.week}</div>
