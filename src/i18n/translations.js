@@ -1,6 +1,7 @@
 export const translations = {
   'zh-TW': {
-    heroTitle: '2026 Berkeley柏克萊國際永續策略人才培育課程學習中心',
+    heroTitleLine1: '2026 Berkeley',
+    heroTitleLine2: '柏克萊國際永續策略人才培育課程學習中心',
     heroCta: '柏克萊國際策略與創新 ESG 人才培育課程 官方課程介紹',
     brandName: 'Berkeley柏克萊國際永續策略人才培育課程學習中心',
     f1: '學員資源區', f2: '作業上傳', f3: '課程回放', f6: '滿意調查',
@@ -232,7 +233,8 @@ export const translations = {
     knowledgeEmpty: '目前無可顯示知識條目。',
   },
   'zh-CN': {
-    heroTitle: '2026 柏克莱国际人才培育课程 学习中心',
+    heroTitleLine1: '2026 柏克萊',
+    heroTitleLine2: '国际人才培育课程 学习中心',
     heroCta: '柏克萊国际策略与创新 ESG 人才培育课程 官方课程介绍',
     brandName: '柏克萊国际策略与创新 ESG 人才培育课程学习中心',
     f1: '学员资源区', f2: '作业上传', f3: '课程回放', f6: '满意调查',
@@ -462,7 +464,8 @@ export const translations = {
     knowledgeEmpty: '目前无可显示知识条目。',
   },
   'en': {
-    heroTitle: '2026 Berkeley ESG Learning Center',
+    heroTitleLine1: '2026 Berkeley',
+    heroTitleLine2: 'ESG Learning Center',
     heroCta: 'Berkeley official course website link',
     brandName: 'Berkeley ESG Learning Center',
     f1: 'Resources', f2: 'Assignment', f3: 'Replay', f6: 'Survey',
