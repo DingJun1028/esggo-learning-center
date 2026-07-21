@@ -13,7 +13,7 @@ const EXTRA_LOCALE_KEYS = new Set([
 
 describe('i18n translations', () => {
   it('should have tw/cn locales only', () => {
-    expect(Object.keys(translations)).toEqual(['zh-TW', 'zh-CN']);
+    expect(Object.keys(translations)).toEqual(['zh-TW', 'zh-CN', 'en']);
   });
 
   it('should have consistent keys across locales', () => {
