@@ -201,10 +201,10 @@
 
 ## 【14】課程支援說明 / AnyDesk
 
-| 語言 | 內容 |
+|| 語言 | 內容 |
 |------|------|
-| 繁體中文 / 简体中文 | 全線上授課，課前請安裝 AnyDesk 遠端支援軟體；僅於學員同意且有需求時由工作人員遠端協助，不會未經同意連線。<br>**值：** `<待補：AnyDesk 官方下載網址>` |
-| English | Fully online; please install AnyDesk remote support software before class. Remote assistance only occurs with learner consent and request; no unsolicited connections.<br>**Value:** `<PENDING: AnyDesk official download URL>` |
+| 繁體中文 / 简体中文 | 全線上授課，課前請安裝 AnyDesk 遠端支援軟體；僅於學員同意且有需求時由工作人員遠端協助，不會未經同意連線。<br>**值：** https://www.anydesk.com/en/downloads |
+| English | Fully online; please install AnyDesk remote support software before class. Remote assistance only occurs with learner consent and request; no unsolicited connections.<br>**Value:** https://www.anydesk.com/en/downloads |
 
 ---
 
@@ -222,14 +222,14 @@
 
 | # | 欄位 | 狀態 | 說明 |
 |---|------|------|------|
-| 1 | 師資：Former President and CEO of Siemens 姓名 | `PENDING` | 手冊僅寫職稱與專長，未給姓名 |
-| 2 | 課程群組 QR Code / 連結 | `PENDING` | 手冊僅有「掃描下方 QR Code」文字，無圖/無連結 |
-| 3 | 學員服務中心 URL | `PENDING` | 手冊描述功能但未給實際網址 |
-| 4 | AnyDesk 官方下載網址 | `PENDING` | 手冊寫「內嵌連結」但未給 URL |
-| 5 | 各師資頭像 LOGO 圖檔路徑 | `PENDING` | 手冊寫 `YOUR LOGO HERE` |
-| 6 | 【0-1】歡迎辭原文逐字稿 | `PENDING` | 目前僅保留重點摘要，待補完整繁體聘辭 |
+| 1 | 師資：Former President and CEO of Siemens 姓名 | `FREE-TIER UNRESOLVED` | 無免費層可查證來源，保留標記 |
+| 2 | 課程群組 QR Code / 連結 | `FREE-TIER UNRESOLVED` | 無免費層可查證來源，保留標記 |
+| 3 | 學員服務中心 URL | `FREE-TIER UNRESOLVED` | 無免費層可查證來源，保留標記 |
+| 4 | AnyDesk 官方下載網址 | `FREE-TIER RESOLVED` | 於【14】填入官方下載頁 https://www.anydesk.com/en/downloads |
+| 5 | 各師資頭像 LOGO 圖檔路徑 | `FREE-TIER UNRESOLVED` | 需實際圖檔上傳免費儲存（Firebase Spark 無 Storage）；本機草案保留 `LOGO` 占位 |
+| 6 | 【0-1】歡迎辭原文逐字稿 | `PENDING` | 僅保留重點摘要，待補完整繁體聘辭 |
 
 ---
 
 *草案輸出時間：2026-07-21*  
-*下一步：A. 隧道恢復後讀 VPS portal 並一次性注入渲染；或 B. 你直接補上面任一真值給我，我立刻補進草案。*
+*免費層限制：師資姓名、群組 QR、服務中心 URL 維持 `FREE-TIER UNRESOLVED`；待手動補真值後更新。*

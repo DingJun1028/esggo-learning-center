@@ -19,6 +19,20 @@ const ADMIN_UID = import.meta.env.VITE_ADMIN_UID || '';
 const MAX_FILE_BYTES = 5 * 1024 * 1024;
 const MAX_TOTAL_BYTES = 700 * 1024;
 
+const CardLink = ({ href, icon, title }) => (
+  <a href={href} target="_blank" rel="noreferrer" className="bg-white p-5 sm:p-6 rounded-xl shadow-sm border border-slate-100 hover:shadow-md hover:border-[#FDB515] transition-all flex flex-col items-center justify-center gap-4 group cursor-pointer min-h-[130px] sm:min-h-[160px]">
+    <div className="bg-slate-50 p-4 rounded-full text-[#003262] group-hover:bg-[#003262] group-hover:text-white transition-colors">{icon}</div>
+    <h3 className="text-lg font-bold text-[#003262]">{title}</h3>
+  </a>
+);
+
+const CardAction = ({ onClick, icon, title }) => (
+  <div onClick={onClick} className="bg-white p-5 sm:p-6 rounded-xl shadow-sm border border-slate-100 hover:shadow-md hover:border-[#FDB515] transition-all flex flex-col items-center justify-center gap-4 group cursor-pointer min-h-[130px] sm:min-h-[160px]">
+    <div className="bg-slate-50 p-4 rounded-full text-[#003262] group-hover:bg-[#003262] group-hover:text-white transition-colors">{icon}</div>
+    <h3 className="text-lg font-bold text-[#003262]">{title}</h3>
+  </div>
+);
+
 class ErrorBoundary extends Component {
   constructor(props) {
     super(props);
@@ -392,17 +406,8 @@ export default function App() {
           <select value={lang} onChange={(e) => setLang(e.target.value)} className="bg-slate-100 border-none text-sm font-semibold text-[#003262] rounded-lg py-2 px-3 outline-none cursor-pointer hover:bg-slate-200 transition-colors">
             <option value="zh-TW">繁體中文</option>
             <option value="zh-CN">简体中文</option>
+            <option value="en">English</option>
           </select>
-          <select value={role} onChange={(e) => trySwitchRole(e.target.value)} className="bg-[#FDB515]/10 border border-[#FDB515]/30 text-sm font-semibold text-[#b47b00] rounded-lg py-2 px-3 outline-none cursor-pointer hover:bg-[#FDB515]/20 transition-colors">
-            <option value="student">{t.roleStudent}</option>
-            <option value="TA">{t.roleTA}</option>
-            <option value="admin">{t.roleAdmin}</option>
-          </select>
-          {role === 'admin' && (
-            <button onClick={() => setView('auth')} className="hidden sm:inline-flex items-center gap-2 bg-white text-[#003262] border border-[#003262] px-3 py-2 rounded-lg text-sm font-bold hover:bg-slate-50 transition-colors shadow-sm">
-              <ShieldCheck size={16} /> <span>{t.authPanel || '授權設定'}</span>
-            </button>
-          )}
           <div className="relative" ref={profileMenuRef}>
             {user && !user.isLocal && !user.isAnonymous ? (
               <button onClick={() => setProfileMenuOpen(!profileMenuOpen)} className="inline-flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-[#003262] px-3 py-2 rounded-lg text-sm font-semibold transition-colors" title={user.email || user.displayName || ''}>
@@ -445,42 +450,20 @@ export default function App() {
 
       {view === 'home' && (
         <div className="max-w-5xl mx-auto mb-10">
-          <div className="bg-[#003262] rounded-2xl p-6 sm:p-10 md:p-16 text-center shadow-lg relative overflow-hidden border-b-4 border-[#FDB515]">
+          <div className="bg-[#003262] rounded-2xl p-6 sm:p-10 md:p-14 text-center shadow-lg relative overflow-hidden border-b-4 border-[#FDB515]">
             <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-[#FDB515] rounded-full opacity-10 blur-3xl"></div>
-            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-white mb-4 relative z-10 font-serif tracking-tight leading-tight">{t.heroTitle}</h2>
-            <div className="relative z-10 bg-white rounded-xl border border-slate-200 overflow-hidden shadow-lg text-left">
-              <div className="flex items-center gap-2 bg-slate-100 border-b border-slate-200 px-4 py-2">
-                <span className="text-xs font-bold text-slate-500">{t.heroCta}</span>
-                <a href="https://corporateinnovation.berkeley.edu/students/business-model-practicum-2026/" target="_blank" rel="noreferrer" className="text-[10px] text-[#003262] hover:underline truncate">https://corporateinnovation.berkeley.edu/students/business-model-practicum-2026/</a>
-              </div>
-              <div className="p-4 text-xs text-slate-500">請點擊上方連結前往官方課程頁面。</div>
-            </div>
+            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-white mb-3 relative z-10 font-serif tracking-tight leading-tight">{t.heroTitle}</h2>
+            <a href="https://corporateinnovation.berkeley.edu/students/business-model-practicum-2026/" target="_blank" rel="noreferrer" className="relative z-10 inline-flex items-center gap-2 bg-white/95 hover:bg-white text-[#003262] font-bold text-sm sm:text-base px-5 py-2.5 rounded-lg shadow transition-colors">
+              2026 Berkeley 柏克萊 官方網站課程介紹
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="opacity-70"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            </a>
           </div>
-          <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-            <a href="https://drive.google.com/drive/folders/1-ZOC6sPNGISeD7Rf6lYT3Q10yYZaTdAy?usp=drive_link" target="_blank" rel="noreferrer" className="bg-white p-5 sm:p-6 rounded-xl shadow-sm border border-slate-100 hover:shadow-md hover:border-[#FDB515] transition-all flex flex-col items-center justify-center gap-4 group cursor-pointer min-h-[130px] sm:min-h-[160px]">
-              <div className="bg-slate-50 p-4 rounded-full text-[#003262] group-hover:bg-[#003262] group-hover:text-white transition-colors"><BookOpen size={32} /></div>
-              <h3 className="text-lg font-bold text-[#003262]">{t.f1}</h3>
-            </a>
-            <a href="https://forms.gle/LVQ2mxL1eFa8Up2u9" target="_blank" rel="noreferrer" className="bg-white p-5 sm:p-6 rounded-xl shadow-sm border border-slate-100 hover:shadow-md hover:border-[#FDB515] transition-all flex flex-col items-center justify-center gap-4 group cursor-pointer min-h-[130px] sm:min-h-[160px]">
-              <div className="bg-slate-50 p-4 rounded-full text-[#003262] group-hover:bg-[#003262] group-hover:text-white transition-colors"><Upload size={32} /></div>
-              <h3 className="text-lg font-bold text-[#003262]">{t.f2}</h3>
-            </a>
-            <div onClick={() => setView('replay')} className="bg-white p-5 sm:p-6 rounded-xl shadow-sm border border-slate-100 hover:shadow-md hover:border-[#FDB515] transition-all flex flex-col items-center justify-center gap-4 group cursor-pointer min-h-[130px] sm:min-h-[160px]">
-              <div className="bg-slate-50 p-4 rounded-full text-[#003262] group-hover:bg-[#003262] group-hover:text-white transition-colors"><PlayCircle size={32} /></div>
-              <h3 className="text-lg font-bold text-[#003262]">{t.f3}</h3>
-            </div>
-            <a href="https://forms.gle/bueqUGc14efLNo6B7" target="_blank" rel="noreferrer" className="bg-white p-5 sm:p-6 rounded-xl shadow-sm border border-slate-100 hover:shadow-md hover:border-[#FDB515] transition-all flex flex-col items-center justify-center gap-4 group cursor-pointer min-h-[130px] sm:min-h-[160px]">
-              <div className="bg-slate-50 p-4 rounded-full text-[#003262] group-hover:bg-[#003262] group-hover:text-white transition-colors"><CalendarCheck size={32} /></div>
-              <h3 className="text-lg font-bold text-[#003262]">{t.f4}</h3>
-            </a>
-            <div onClick={() => setView('question')} className="bg-white p-5 sm:p-6 rounded-xl shadow-sm border border-slate-100 hover:shadow-md hover:border-[#FDB515] transition-all flex flex-col items-center justify-center gap-4 group cursor-pointer min-h-[130px] sm:min-h-[160px]">
-              <div className="bg-slate-50 p-4 rounded-full text-[#003262] group-hover:bg-[#003262] group-hover:text-white transition-colors"><MessageCircleQuestion size={32} /></div>
-              <h3 className="text-lg font-bold text-[#003262]">{t.f5}</h3>
-            </div>
-            <div onClick={() => setView('survey')} className="bg-white p-5 sm:p-6 rounded-xl shadow-sm border border-slate-100 hover:shadow-md hover:border-[#FDB515] transition-all flex flex-col items-center justify-center gap-4 group cursor-pointer min-h-[130px] sm:min-h-[160px]">
-              <div className="bg-slate-50 p-4 rounded-full text-[#003262] group-hover:bg-[#003262] group-hover:text-white transition-colors"><Smile size={32} /></div>
-              <h3 className="text-lg font-bold text-[#003262]">{t.f6}</h3>
-            </div>
+
+          <div className="mt-8 sm:mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+            <CardLink href="https://drive.google.com/drive/folders/1-ZOC6sPNGISeD7Rf6lYT3Q10yYZaTdAy?usp=drive_link" icon={<BookOpen size={28} />} title={t.f1} />
+            <CardLink href="https://docs.google.com/forms/d/e/1FAIpQLSeLEij5XZ1TtBqxHYoNAx22QCSvfr-WPg0yp26hceq6d_ZMWg/viewform" icon={<Upload size={28} />} title={t.f2} />
+            <CardAction onClick={() => setView('replay')} icon={<PlayCircle size={28} />} title={t.f3} />
+            <CardLink href="https://docs.google.com/forms/d/e/1FAIpQLSeLEij5XZ1TtBqxHYoNAx22QCSvfr-WPg0yp26hceq6d_ZMWg/viewform" icon={<Smile size={28} />} title={t.f6} />
           </div>
         </div>
       )}
