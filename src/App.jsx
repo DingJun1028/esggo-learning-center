@@ -14,8 +14,8 @@ import {
 } from 'lucide-react';
 import translations from './i18n/translations';
 
-const ADMIN_PASS = import.meta.env.VITE_ADMIN_PASS || '';
-const ADMIN_UID = import.meta.env.VITE_ADMIN_UID || '';
+const ADMIN_PASS = import.meta.env?.VITE_ADMIN_PASS || import.meta.env.VITE_ADMIN_PASS || '';
+const ADMIN_UID = import.meta.env?.VITE_ADMIN_UID || import.meta.env.VITE_ADMIN_UID || '';
 const MAX_FILE_BYTES = 5 * 1024 * 1024;
 const MAX_TOTAL_BYTES = 700 * 1024;
 
@@ -297,8 +297,10 @@ export default function App() {
     let cancelled = false;
     (async () => {
       try {
-        const url = (import.meta.env.VITE_REPLAY_WEB_APP_URL || '').trim();
-        const res = await fetch(url);
+        const replayUrl = import.meta.env?.VITE_REPLAY_WEB_APP_URL || import.meta.env.VITE_REPLAY_WEB_APP_URL || '';
+        const trimmed = replayUrl.trim();
+        if (!trimmed) { if (!cancelled) setReplayVideos([]); return; }
+        const res = await fetch(trimmed);
         const text = await res.text();
         const jsonp = text.match(/^[^(]*\((.*)\);\s*$/s);
         const payload = jsonp ? JSON.parse(jsonp[1]) : JSON.parse(text);
