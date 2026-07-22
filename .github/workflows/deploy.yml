@@ -1,0 +1,145 @@
+name: learning-center-deploy
+
+on:
+  push:
+    branches: [ main, learning-center-init ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build
+        run: pnpm run build
+
+      - name: Test
+        run: pnpm run test
+
+  deploy-vercel:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    environment: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install pnpm
+        run: npm install -g pnpm@9
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build
+        run: pnpm run build
+
+      - name: Deploy to Vercel
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-args: '--prod'
+          working-directory: .
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+  deploy-firebase:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    environment: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install pnpm
+        run: npm install -g pnpm@9
+
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools@latest
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build
+        run: pnpm run build
+
+      - name: Setup Firebase credentials
+        run: |
+          echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" > serviceAccountKey.json
+          echo "firebase-adminsdk-fbsvc@esggo-learning-center.iam.gserviceaccount.com" > serviceAccountEmail.txt
+
+      - name: Deploy to Firebase Hosting
+        uses: FirebaseExtended/action-firebase-deploy@v19
+        with:
+          firebaseToken: ${{ secrets.FIREBASE_TOKEN }}
+          project-id: esggo-learning-center
+          channelId: live
+          useEmulators: false
+
+  check-types-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout learning-center
+        uses: actions/checkout@v4
+        with:
+          path: learning-center
+
+      - name: Checkout esggo
+        uses: actions/checkout@v4
+        with:
+          repository: DingJun1028/esggo
+          path: esggo
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install pnpm
+        run: corepack enable && corepack prepare pnpm@9.0.0 --activate
+
+      - name: Generate shared types
+        run: cd esggo && node scripts/export-shared-types.js
+
+      - name: Verify sync
+        run: |
+          GENERATED="$(cd learning-center && node scripts/check-types-sync.js)"
+          echo "$GENERATED"
+          if [ "$GENERATED" != "TYPES_IN_SYNC" ]; then
+            echo "Type sync check failed"
+            exit 1
+          fi
