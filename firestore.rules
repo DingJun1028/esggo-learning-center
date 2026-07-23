@@ -11,13 +11,9 @@ service cloud.firestore {
       return authenticated() && request.auth.token.role == 'admin';
     }
 
-    function isTA() {
-      return authenticated() && request.auth.token.role in ['TA', 'admin'];
-    }
-
     match /platforms/{platformId} {
       allow read: if authenticated();
-      allow write: if authenticated() && request.resource.size() <= 1 * 1024 * 1024;
+      allow write: if isAdmin();
 
       match /submissions/{docId} {
         allow read: if isAdmin() || resource.data.userId == request.auth.uid;

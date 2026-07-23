@@ -21,9 +21,17 @@ dist-ssr/
 
 # ===== Firebase deploy artifacts / runtime state =====
 .firebase/
-.firebaserc
-.firebase-debug.log
-.firebase-hosting*/**
+
+firebase-debug.log
+
+# ===== Functions directory =====
+functions/node_modules/
+functions/lib/
+functions/package-lock.json
+
+# ===== SSH / secrets files (never commit) =====
+*.pem
+scripts/oracle_vps_ssh_key.pem
 
 # ===== Hermes workspace runtime state (kept local) =====
 .hermes/
@@ -31,3 +39,4 @@ dist-ssr/
 
 # ===== Firebase emulator local data =====
 emulator-data/
+.vercel

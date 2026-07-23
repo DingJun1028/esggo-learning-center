@@ -1,14 +1,15 @@
 {
   "compilerOptions": {
     "target": "ES2021",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
+    "module": "CommonJS",
+    "moduleResolution": "node16",
     "strict": true,
-    "noEmit": true,
-    "isolatedModules": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "outDir": "lib",
+    "rootDir": "src",
+    "declaration": false
   },
   "include": ["src"]
 }

@@ -32,3 +32,39 @@ jobs:
 
       - name: Test
         run: pnpm run test
+
+  check-types-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout learning-center
+        uses: actions/checkout@v4
+        with:
+          path: learning-center
+
+      - name: Checkout esggo
+        uses: actions/checkout@v4
+        with:
+          repository: DingJun1028/esggo
+          path: esggo
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: learning-center/pnpm-lock.yaml
+
+      - name: Install pnpm
+        run: corepack enable && corepack prepare pnpm@9.0.0 --activate
+
+      - name: Generate shared types
+        run: cd esggo && node scripts/export-shared-types.js
+
+      - name: Verify sync
+        run: |
+          GENERATED="$(cd learning-center && node scripts/check-types-sync.js)"
+          echo "$GENERATED"
+          if [ "$GENERATED" != "TYPES_IN_SYNC" ]; then
+            echo "Type sync check failed"
+            exit 1
+          fi

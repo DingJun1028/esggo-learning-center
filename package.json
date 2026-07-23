@@ -8,6 +8,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
+    "lint": "eslint src",
+    "lint:fix": "eslint src --fix",
     "deploy:all": "pnpm build && firebase deploy",
     "deploy:hosting": "pnpm build && firebase deploy --only hosting",
     "deploy:rules": "firebase deploy --only firestore:rules"
@@ -20,8 +22,12 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.5",
     "@vitejs/plugin-react": "^4.3.1",
     "autoprefixer": "^10.4.19",
+    "eslint": "^9.39.5",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^5.2.0",
     "jsdom": "^29.1.1",
     "postcss": "^8.4.39",
     "tailwindcss": "^3.4.4",

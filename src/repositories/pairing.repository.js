@@ -7,6 +7,7 @@ import {
   query,
   where,
   getDocs,
+  getDoc,
   FirestoreError,
 } from 'firebase/firestore';
 

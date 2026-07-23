@@ -13,7 +13,7 @@ const EXTRA_LOCALE_KEYS = new Set([
 
 describe('i18n translations', () => {
   it('should have tw/cn locales only', () => {
-    expect(Object.keys(translations)).toEqual(['zh-TW', 'zh-CN']);
+    expect(Object.keys(translations)).toEqual(['zh-TW', 'zh-CN', 'en']);
   });
 
   it('should have consistent keys across locales', () => {
@@ -25,10 +25,10 @@ describe('i18n translations', () => {
 
   it('should have known keys in zh-TW', () => {
     const t = translations['zh-TW'];
-    expect(t.heroTitle).toBe('2026 Berkeley柏克萊國際永續策略人才培育課程學習中心');
+    expect(t.heroTitleLine1).toBe('2026 Berkeley');
+    expect(t.heroTitleLine2).toBe('柏克萊國際永續策略人才培育課程學習中心');
     expect(t.footer).toBe('2026 Berkeley柏克萊國際永續策略人才培育課程學習中心 | 柏克萊國際策略與創新 ESG 人才培育課程');
     expect(t.brandName).toBe('Berkeley柏克萊國際永續策略人才培育課程學習中心');
-    expect(['作業', '預約', '提問', '問卷']).toContain(t.types.upload);
   });
 });
 

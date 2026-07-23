@@ -15,7 +15,7 @@
 // ===== 只需改這裡 =====
 var CONFIG = {
   // 教學影片資料夾 ID（網址 drive.google.com/drive/folders/<這段> 中的那段）
-  FOLDER_ID: '1cyT_HDOo6nJQe3MOon0LKYMwOGDkMpzx',
+  FOLDER_ID: '1-ZOC6sPNGISeD7Rf6lYT3Q10yYZaTdAy',
 
   // 自動化設定想要寫入的試算表（第一次執行會自動建立，之後會重用）。
   // 留空 '' 會自動在 Google Drive 根目錄建立「ESG回放自動化設定」試算表。

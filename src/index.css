@@ -2,6 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ===== Berkeley ESGGO Design Tokens ===== */
+:root {
+  --berkeley-blue: #003262;
+  --berkeley-gold: #FDB515;
+  --berkeley-gold-dim: #b47b00;
+  --berkeley-surface: #F8FAFC;
+}
+
 /* ===== Global mobile-first optimization ===== */
 html {
   -webkit-text-size-adjust: 100%;
