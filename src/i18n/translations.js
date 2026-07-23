@@ -464,10 +464,8 @@ export const translations = {
     knowledgeEmpty: '目前无可显示知识条目。',
   },
   'en': {
-    heroTitleLine1: '2026 Berkeley 柏克萊國際永續策略',
-    heroTitleLine2: 'Berkeley 人才培育課程學習中心',
-    heroTitleLine1: '2026 Berkeley ESG Learning Center',
-    heroTitleLine2: 'Berkeley',
+    heroTitleLine1: '2026 Berkeley',
+    heroTitleLine2: 'International ESG Strategy Talent Development Program Learning Center',
     f1: 'Resources', f2: 'Assignment', f3: 'Replay', f6: 'Survey',
     records: 'Records', admin: 'Admin', myRecords: 'My Records', myPairings: 'My Pairings',
     roleStudent: 'Student View', roleTA: 'TA View', roleAdmin: 'Admin View',
