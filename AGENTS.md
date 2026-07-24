@@ -1,10 +1,16 @@
 # AGENTS.md
 
+## 📚 平台最佳實踐總集
+
+> **整合文檔**：[docs/ESGGO_PLATFORM_BEST_PRACTICES.md](docs/ESGGO_PLATFORM_BEST_PRACTICES.md)
+> 包含驗證、部署、CI/CD、安全、VPS 運維、Cloudflare 設定、故障排除等完整最佳實踐。
+> 適用於所有在 ESGGO 生態系統中工作的開發者、運維工程師、部署工程師。
+
 ## 專案脈絡
 
 - **目標平台**：Firebase Hosting（`firebase.json` 為單一可信來源）。
 - **技術棧**：Vite + React + Tailwind + Vitest。
-- **目前分支**：`i18n-full-translation`，目標為完整繁體中文在地化，不接受英文 fallback。
+- **目前分支**：`main`（實查 2026-07-25；AGENTS.md 舊版曾寫 `i18n-full-translation`，已更正）。目標為完整繁體中文在地化，不接受英文 fallback。
 - **使用者偏好**：繁體中文。
 
 ## 驗證順序
@@ -70,3 +76,11 @@ npm run build
 - 小範圍修正使用 `patch`。
 - 重寫整檔前先 read back 確認目前內容，避免遺漏 stale literal。
 - Windows CJK 工作區以 read back 結果為準；write/patch 回報成功不構成最終答案，build 也不會發現殘留字串問題。
+
+## Hermes Agent 協作慣例
+
+- 本 repo 的專案規則以本 AGENTS.md 為準（cwd-only，僅在 cwd 為此專案時自動載入）。從其他目錄呼叫 Hermes 處理此專案時，請先讀本檔或 load 對應 skill（`esggo-learning-center-verify-deploy` 等）。
+- **環境健康**：定期跑 `hermes doctor`；npm workspace 有 audit 警告（web/ui-tui）屬已知非阻斷性，可 `hermes doctor --fix` 或 `npm audit fix` 處理。
+- **排程監控**：已設 cron 每日 09:00 跑 `scripts/esggo_healthcheck.sh`（test + build 健康檢查），失敗才告警；用 `hermes cron list` / `cronjob action=list` 查結果。
+- **平行子任務**：要對本專案跑長時間或平行探索時用 `delegate_task`；會改碼的子 agent 加 worktree（`-w`）避免 git 衝突。
+- **profile**：本機另有 `oa-team` profile（poolside/laguna-s-2.1:free）；預設 profile 為 `default`，切換用 `hermes profile use <name>`。
