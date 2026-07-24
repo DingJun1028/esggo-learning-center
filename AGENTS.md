@@ -84,3 +84,14 @@ npm run build
 - **排程監控**：已設 cron 每日 09:00 跑 `scripts/esggo_healthcheck.sh`（test + build 健康檢查），失敗才告警；用 `hermes cron list` / `cronjob action=list` 查結果。
 - **平行子任務**：要對本專案跑長時間或平行探索時用 `delegate_task`；會改碼的子 agent 加 worktree（`-w`）避免 git 衝突。
 - **profile**：本機另有 `oa-team` profile（poolside/laguna-s-2.1:free）；預設 profile 為 `default`，切換用 `hermes profile use <name>`。
+- **實戰最佳實踐（10 條，從真實踩坑歸納）**：完整版見 skill `esggo-learning-center-best-practices`（Hermes 自動載入）。重點：
+  1. AGENTS.md 是 cwd-only，勿加根 `.hermes.md`（會遮蔽本檔）。
+  2. verify order：改完跑 `npm run test` → `npm run build` → `pnpm run lint`（目標 0/0）。
+  3. 刪「未用碼」前先 `grep -nw` 全檔核實（lint 報 unused 可能是遮蔽/遞迴隱患，如 `deleteSubmission`）。
+  4. 升級依賴前先備份 `pnpm-lock.yaml`；跨 major 風險高。
+  5. 勿用 pnpm `overrides` 強升傳遞依賴（undici 強升會破壞 jsdom 測試環境）。
+  6. 用 `pnpm audit` 看漏洞，不是 `npm audit`（npm 工具讀不懂 pnpm 隔離結構會誤報）。
+  7. 部署無關的 dev-only 漏洞（undici=Node-only、brace-expansion=dev 工具鏈）可接受，別為綠燈強升破壞鏈。
+  8. 一目的一 commit，改完即 push。
+  9. cron 監控用 watchdog 模式（成功靜默、失敗才告警）。
+  10. `.env` 快照存 repo 外並鏡像 OneDrive，絕不進 git。
