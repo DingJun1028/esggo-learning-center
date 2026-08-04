@@ -50,8 +50,12 @@ export const nousOAuthCallback = functions.onRequest(async (req, res) => {
     return;
   }
 
-  // Verify state (CSRF protection)
-  const expectedState = req.cookies?.['nous_oauth_state'];
+  // Verify state (CSRF protection) — state param must match signed cookie
+  const stateCookie = req.headers.cookie
+    ?.split(';')
+    .map((c: string) => c.trim())
+    .find((c: string) => c.startsWith('nous_oauth_state='));
+  const expectedState = stateCookie ? stateCookie.split('=')[1] : undefined;
   if (state !== expectedState) {
     res.status(401).send({ error: 'invalid_state' });
     return;
@@ -81,7 +85,21 @@ export const nousOAuthCallback = functions.onRequest(async (req, res) => {
     // Store token in Firebase (user-scoped)
     const authHeader = req.headers.authorization || '';
     const idToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : '';
-    const decodedToken = await admin.auth().verifyIdToken(idToken);
+    if (!idToken) {
+      res.status(401).send({ error: 'missing_id_token' });
+      return;
+    }
+    let decodedToken;
+    try {
+      decodedToken = await admin.auth().verifyIdToken(idToken);
+    } catch {
+      res.status(401).send({ error: 'invalid_token' });
+      return;
+    }
+    if (!decodedToken) {
+      res.status(401).send({ error: 'invalid_token' });
+      return;
+    }
     const uid = decodedToken.uid;
 
     await admin.firestore().collection('users').doc(uid).set({
