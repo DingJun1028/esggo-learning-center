@@ -1,0 +1,108 @@
+name: 🌐 Set DNS A Record for OmniAuto
+
+on:
+  workflow_dispatch:
+    inputs:
+      subdomain:
+        description: "子域名 (例如: aistation)"
+        required: true
+        default: "aistation"
+      ip:
+        description: "VPS IP 地址"
+        required: true
+        default: "161.118.252.147"
+      domain:
+        description: "完整域名"
+        required: true
+        default: "esggo.co"
+      proxied:
+        description: "是否通过 Cloudflare 代理"
+        required: false
+        default: "true"
+
+jobs:
+  create-dns-record:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: 创建 DNS A 记录
+        env:
+          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ZONE_NAME: ${{ github.event.inputs.domain }}
+          RECORD_NAME: ${{ github.event.inputs.subdomain }}
+          RECORD_CONTENT: ${{ github.event.inputs.ip }}
+          PROXIED: ${{ github.event.inputs.proxied }}
+        run: |
+          # 获取 Zone ID
+          ZONE_ID=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones?name=$ZONE_NAME" \
+            -H "Authorization: Bearer $CF_API_TOKEN" \
+            -H "Content-Type: application/json" | jq -r '.result[0].id')
+          
+          echo "✅ Zone ID: $ZONE_ID"
+          echo "📍 创建 A 记录: $RECORD_NAME.$ZONE_NAME → $RECORD_CONTENT"
+          
+          # 创建 DNS A 记录
+          RESULT=$(curl -s -X POST "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records" \
+            -H "Authorization: Bearer $CF_API_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"type\": \"A\",
+              \"name\": \"$RECORD_NAME\",
+              \"content\": \"$RECORD_CONTENT\",
+              \"ttl\": 120,
+              \"proxied\": $PROXIED
+            }")
+          
+          SUCCESS=$(echo "$RESULT" | jq -r '.success')
+          if [ "$SUCCESS" = "true" ]; then
+            RECORD_ID=$(echo "$RESULT" | jq -r '.result.id')
+            echo "✅ DNS A 记录创建成功! ID: $RECORD_ID"
+            echo "🔗 https://$RECORD_NAME.$ZONE_NAME"
+          else
+            ERROR=$(echo "$RESULT" | jq -r '.errors[0].message // "unknown"')
+            echo "⚠️ 创建失败: $ERROR"
+            # 如果记录已存在，尝试更新
+            if echo "$ERROR" | grep -qi "already exists"; then
+              echo "📋 记录已存在，尝试更新..."
+              EXISTING_ID=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records?type=A&name=$RECORD_NAME.$ZONE_NAME" \
+                -H "Authorization: Bearer $CF_API_TOKEN" | jq -r '.result[0].id')
+              UPDATE_RESULT=$(curl -s -X PUT "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records/$EXISTING_ID" \
+                -H "Authorization: Bearer $CF_API_TOKEN" \
+                -H "Content-Type: application/json" \
+                -d "{
+                  \"type\": \"A\",
+                  \"name\": \"$RECORD_NAME\",
+                  \"content\": \"$RECORD_CONTENT\",
+                  \"ttl\": 120,
+                  \"proxied\": $PROXIED
+                }")
+              UPDATE_SUCCESS=$(echo "$UPDATE_RESULT" | jq -r '.success')
+              echo "✅ 更新结果: $UPDATE_SUCCESS"
+            fi
+          fi
+
+      - name: 验证 DNS 解析
+        run: |
+          FULL_DOMAIN="${{ github.event.inputs.subdomain }}.${{ github.event.inputs.domain }}"
+          echo "🔍 验证 DNS 解析: $FULL_DOMAIN"
+          sleep 5
+          RESOLVED=$(dig +short $FULL_DOMAIN @8.8.8.8 2>/dev/null || nslookup $FULL_DOMAIN 2>/dev/null | grep -E "^Address" | tail -1)
+          echo "📡 解析结果: $RESOLVED"
+          if echo "$RESOLVED" | grep -q "${{ github.event.inputs.ip }}"; then
+            echo "✅ DNS 验证通过! $FULL_DOMAIN → $RESOLVED"
+          else
+            echo "⚠️ DNS 可能尚未完全传播，请稍后验证"
+          fi
+
+      - name: 完成信息
+        run: |
+          echo "=========================================="
+          echo "🌐 DNS 记录设置完成!"
+          echo "📡 域名: https://${{ github.event.inputs.subdomain }}.${{ github.event.inputs.domain }}"
+          echo "📍 IP: ${{ github.event.inputs.ip }}"
+          echo "=========================================="
+          echo ""
+          echo "下一步: 运行 https.yml 启用 HTTPS"
+          echo "  gh workflow run https.yml -f domain=${{ github.event.inputs.subdomain }}.${{ github.event.inputs.domain }}"
