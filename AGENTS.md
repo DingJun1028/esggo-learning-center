@@ -7,17 +7,28 @@
 > 適用於所有在 ESGGO 生態系統中工作的開發者、運維工程師、部署工程師。
 
 ## 專案脈絡
-
 - **目標平台**：Firebase Hosting（`firebase.json` 為單一可信來源）。
 - **技術棧**：Vite + React + Tailwind + Vitest。
 - **目前分支**：`main`（實查 2026-07-25；AGENTS.md 舊版曾寫 `i18n-full-translation`，已更正）。目標為完整繁體中文在地化，不接受英文 fallback。
 - **使用者偏好**：繁體中文。
 
+## 相關技能書
+
+### 核心技能書
+- **ESGG0 全域全端技能書** (`skill://esggo-full-stack`)：VPS 部署、Firebase、CI/CD、Docker 整合
+- **UI Cleanup 技能書** (`skill://esggo-learning-center-ui-cleanup`)：介面清理、i18n 管理、部署驗證
+
+### 查詢技能書
+```bash
+hermes skills view esggo-full-stack
+hermes skills view esggo-learning-center-ui-cleanup
+```
+
 ## 驗證順序
 
  modernity first，在宣傳任何變更前一律執行：
 
-```
+```bash
 npm run test
 npm run build
 ```
@@ -34,7 +45,7 @@ npm run build
 
 ## 報告與步驟缺口約定
 
-- 執行任何有編號的驗證/流程（如 pre-commit review 的 Step 1–8）時，**每一個步驟編號都要交代**：被正確跳過的步驟（例如無失敗故跳過 auto-fix、無 linter 故跳過 lint）必須顯式標註「Step N：skipped（原因）」，不得讓編號從 N 直接跳到 N+2。
+- 執行任何有編號的驗議/流程（如 pre-commit review 的 Step 1–8）時，**每一個步驟編號都要交代**：被正確跳過的步驟（例如無失敗故跳過 auto-fix、無 linter 故跳過 lint）必須顯式標註「Step N：skipped（原因）」，不得讓編號從 N 直接跳到 N+2。
 - **禁止用理由把缺口合理化掉**：不得以「不需要」「skill 沒要求」等說法繞過缺口。跳過或漏做的步驟就照實報「skipped / missed + 原因」，永遠不要狡辯。
 - 報告缺口是誠實問題，不是格式問題：即便跳過本身是對的，不說出來也視為報告缺陷。
 
@@ -75,6 +86,7 @@ npm run build
 
 - 小範圍修正使用 `patch`。
 - 重寫整檔前先 read back 確認目前內容，避免遺漏 stale literal。
+<<<<<<< Updated upstream
 - Windows CJK 工作區以 read back 結果為準；write/patch 回報成功不構成最終答案，build 也不會發現殘留字串問題。
 
 ## Hermes Agent 協作慣例
@@ -95,3 +107,6 @@ npm run build
   8. 一目的一 commit，改完即 push。
   9. cron 監控用 watchdog 模式（成功靜默、失敗才告警）。
   10. `.env` 快照存 repo 外並鏡像 OneDrive，絕不進 git。
+=======
+- Windows CJK 工作區以 read back 結果為準；write/patch 回報成功不構成最終答案，build 也不會發現殘留字串問題。
+>>>>>>> Stashed changes
