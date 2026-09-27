@@ -115,6 +115,9 @@ jobs:
           # Input names verified against action.yml @ v0.11.0. The previous
           # `firebaseToken` / `project-id` keys are not valid inputs and were
           # being ignored silently.
+          # `firebaseServiceAccount` is the action's required input; the repo
+          # already carries this secret. repoToken stays for the PR comment.
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           projectId: esggo-learning-center
           channelId: live
