@@ -54,13 +54,14 @@ jobs:
       - name: Install pnpm
         run: corepack enable && corepack prepare pnpm@9.0.0 --activate
 
+      # No `cache: pnpm` here: this job never runs `pnpm install` (it only runs
+      # node scripts to generate + compare shared types), so a pnpm store is
+      # never created and the post-job cache save fails with
+      # "Path(s) specified in the action for caching do(es) not exist".
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: pnpm
-          # Repo root holds pnpm-lock.yaml; there is no learning-center/pnpm-lock.yaml.
-          cache-dependency-path: pnpm-lock.yaml
 
       - name: Generate shared types
         run: cd esggo && node scripts/export-shared-types.js
