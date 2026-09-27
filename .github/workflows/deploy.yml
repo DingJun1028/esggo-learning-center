@@ -42,14 +42,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # pnpm first: same `cache: pnpm` ordering bug (run #14, 2026-09-17).
+      - name: Install pnpm
+        run: npm install -g pnpm@9
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: pnpm
-
-      - name: Install pnpm
-        run: npm install -g pnpm@9
+          cache-dependency-path: pnpm-lock.yaml
 
       - name: Install dependencies
         run: pnpm install
@@ -74,18 +76,23 @@ jobs:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     environment: production
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      # pnpm first: same `cache: pnpm` ordering bug (run #14, 2026-09-17).
+      - name: Install pnpm
+        run: npm install -g pnpm@9
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: pnpm
-
-      - name: Install pnpm
-        run: npm install -g pnpm@9
+          cache-dependency-path: pnpm-lock.yaml
 
       - name: Install Firebase CLI
         run: npm install -g firebase-tools@latest
@@ -100,14 +107,17 @@ jobs:
         run: |
           echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" > serviceAccountKey.json
           echo "firebase-adminsdk-fbsvc@esggo-learning-center.iam.gserviceaccount.com" > serviceAccountEmail.txt
+          test -s serviceAccountKey.json || { echo "::error::FIREBASE_SERVICE_ACCOUNT is empty"; exit 1; }
 
       - name: Deploy to Firebase Hosting
-        uses: FirebaseExtended/action-firebase-deploy@v19
+        uses: FirebaseExtended/action-hosting-deploy@v0.11.0
         with:
-          firebaseToken: ${{ secrets.FIREBASE_TOKEN }}
-          project-id: esggo-learning-center
+          # Input names verified against action.yml @ v0.11.0. The previous
+          # `firebaseToken` / `project-id` keys are not valid inputs and were
+          # being ignored silently.
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          projectId: esggo-learning-center
           channelId: live
-          useEmulators: false
 
   check-types-sync:
     runs-on: ubuntu-latest
@@ -123,14 +133,17 @@ jobs:
           repository: DingJun1028/esggo
           path: esggo
 
+      # pnpm first: same `cache: pnpm` ordering bug as ci.yml check-types-sync
+      # (run #14, 2026-09-17 — "Unable to locate executable file: pnpm").
+      - name: Install pnpm
+        run: corepack enable && corepack prepare pnpm@9.0.0 --activate
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: pnpm
-
-      - name: Install pnpm
-        run: corepack enable && corepack prepare pnpm@9.0.0 --activate
+          cache-dependency-path: learning-center/pnpm-lock.yaml
 
       - name: Generate shared types
         run: cd esggo && node scripts/export-shared-types.js
