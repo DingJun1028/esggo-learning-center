@@ -47,15 +47,19 @@ jobs:
           repository: DingJun1028/esggo
           path: esggo
 
+      # pnpm must exist BEFORE setup-node runs, because `cache: pnpm` makes
+      # setup-node shell out to `pnpm store path`. Previously setup-node came
+      # first and died with "Unable to locate executable file: pnpm"
+      # (run #78, 2026-09-17). Order below is load-bearing, not cosmetic.
+      - name: Install pnpm
+        run: corepack enable && corepack prepare pnpm@9.0.0 --activate
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: pnpm
           cache-dependency-path: learning-center/pnpm-lock.yaml
-
-      - name: Install pnpm
-        run: corepack enable && corepack prepare pnpm@9.0.0 --activate
 
       - name: Generate shared types
         run: cd esggo && node scripts/export-shared-types.js
