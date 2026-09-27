@@ -205,3 +205,264 @@ export interface IApiResult<T> {
   data: T;
   error?: any;
 }
+
+export enum TranslateEngine {
+  GOOGLE_GTX = 'google-gtx',
+  LIBRETRANSLATE = 'libretranslate',
+  MYMEMORY = 'mymemory',
+  OLLAMA = 'ollama',
+  PASSTHROUGH = 'passthrough',
+  FALLBACK_ORIGIN = 'fallback-origin',
+}
+
+export type LanguageCode =
+  | 'auto' | 'zh' | 'zh-CN' | 'zh-TW' | 'zh-Hant'
+
+export interface ITranslateRequest {
+  text: string;
+  /** 來源語碼 (運行期允許任意 string) */
+  from?: string;
+  /** 目標語碼 (運行期允許任意 string) */
+  to?: string;
+  /** 多語平行翻譯目標 (即時轉播場景) */
+  targets?: LanguageCode[];
+  /** 房間隔離 (SSE 多房間) */
+  room?: string;
+}
+
+export interface ITranslateResult {
+  text: string;
+  /** 引擎識別字串 (對齊 TranslateEngine 枚舉值, 但以 string 寬鬆容許運行期動態引擎) */
+  engine: string;
+  cached: boolean;
+  version?: string;
+}
+
+export interface ISpeakPayload {
+  text: string;
+  /** 來源語碼 (運行期允許任意 string, 引擎層再做規範化) */
+  from?: string;
+  /** 目標語碼 (運行期允許任意 string) */
+  to?: string;
+  targets?: LanguageCode[];
+  room?: string;
+  speaker?: string;
+}
+
+export interface ISseTranslationEvent {
+  text: string;
+  translations: Partial<Record<LanguageCode, string>>;
+  engines?: Partial<Record<LanguageCode, string>>;
+  /** 單語場景的引擎識別字串 (對齊 TranslateEngine) */
+  engine?: string;
+  cached?: boolean;
+  trace?: string;
+  room?: string;
+  speaker?: string;
+  /** 跨句脈絡記憶: 近期前文 (供 UI 顯示「前文」, 提升連貫) */
+  context?: Array<{ src: string; tgt?: string }>;
+}
+
+export type BilingualPair = 'zh-TW-en' | 'en-zh-TW';
+
+export interface ISpeechToSubtitleRequest {
+  /** 語言提示 (鎖定雙向, 禁其他) */
+  languageHint?: 'zh-TW' | 'en';
+  /** 房間隔離 (SSE 多房間) */
+  room?: string;
+  /** 講者標籤 (5T 溯源) */
+  speaker?: string;
+}
+
+export interface ISpeechToSubtitleResult {
+  /** 原始辨識文字 */
+  text: string;
+  /** STT 偵測語 (鎖定雙向) */
+  detected: 'zh-TW' | 'en';
+  /** 即時翻譯對向 (單語場景): zh-TW→en 或 en→zh-TW */
+  translation: string;
+  /** 翻譯目標語 */
+  target: 'zh-TW' | 'en';
+  /** 平行翻譯多語場景: 語碼 → 譯文 (translateToMany 輸出) */
+  translations?: Partial<Record<LanguageCode, string>>;
+  /** 引擎識別字串 (5T 溯源: stt:whisper + ollama:<model>) */
+  engine: string;
+  /** 平行翻譯多語場景: 語碼 → 引擎 (translateToMany 輸出) */
+  engines?: Partial<Record<LanguageCode, string>>;
+  /** 是否命中快取 */
+  cached: boolean;
+  /** 溯源追蹤碼 */
+  trace?: string;
+}
+
+export interface IOmniTypeMatrix {
+  canonical: 'esggo/shared/types.ts';
+  generator: 'scripts/export-shared-types.js';
+  consumers: string[]; // 各端 types/generated/esggo-shared.d.ts 路徑
+}
+
+export type PlayerSourceKind = 'file' | 'url' | 'zoom';
+
+export type IPlayerSource =
+  | { kind: 'file'; file: File }
+
+export interface IZoomMeeting {
+  /** Zoom 會議號 (選填, 僅作展示) */
+  meetingId?: string;
+  /** 會議原文語言 (對齊 LanguageCode) */
+  sourceLang: LanguageCode;
+  /** 是否為線上直播中 */
+  isLive: boolean;
+}
+
+export interface IPlayerState {
+  sourceKind: PlayerSourceKind;
+  isPlaying: boolean;
+  isCaptioning: boolean;
+  lastCaption?: { src: string; translations: Partial<Record<LanguageCode, string>> };
+}
+
+export interface ISecondBrainNote {
+  id: string;
+  title: string;
+  tags: string[];
+  source_origin: string;
+  sync: 'mirror' | 'up';
+}
+
+export type HiveSide = 'local' | 'vps';
+
+export type ArrayKey = 'sanctum' | 'rune' | 'wing' | 'alchemy' | 'audit';
+
+export interface ISoulAgent {
+  id: number;
+  title: string;
+  tags: string[];
+  array: ArrayKey;
+  side: HiveSide;
+  task: string;
+}
+
+export interface IComponentCore {
+  // 萬能永憶主體唯一識別碼 (Immutable)
+  readonly uuid: string;
+  // 語義化版本控制
+  readonly version: string;
+  // 刻印時間戳 (溯源起點)
+  readonly timestamp: number;
+  // 證據左證庫 (儲存觀因循果的執行軌跡)
+  evidence: {
+    originCause: string;    // 因：原始觸發條件
+    processTrace: string[]; // 循：InfoOne 流轉路徑
+    finalEffect: string;    // 果：最終執行結果與狀態
+  };
+}
+
+export interface ISoulArtifact extends IComponentCore {
+  source_origin: string; // Traceable: 產物來源標註
+  lifecycle: string[];   // Trackable: 狀態流轉記錄
+  hash_lock: string;     // Trustworthy: 雜湊鎖定
+  author: string;        // Trustworthy: 不可篡改署名
+}
+
+export interface ISwarmTask {
+  task: string;
+  source_origin: string; // Traceable
+  array?: ArrayKey;      // 指定陣列 (選填)
+  side?: HiveSide;       // 指定蜂側 (選填)
+}
+
+export type SwarmTaskResult = Readonly<ISoulArtifact>;
+
+export interface IOABMessage {
+  serviceId: string;
+  topic: string;
+  payload: unknown;
+  trace?: string;       // 5T 溯源碼
+  ts: number;
+}
+
+export interface I5TVerification {
+  traceable: boolean;
+  trackable: boolean;
+  tangible: boolean;
+  transparent: boolean;
+  trustworthy: boolean;
+  passed: boolean;
+}
+
+export interface IVideoGenerationTask {
+  /** 影片主題 (AI 生成腳本依據) */
+  video_subject: string;
+  /** 自訂腳本 (選填, 優先於主題生成) */
+  video_script?: string;
+  /** 素材源: pixabay (有效 key) / pexels / local (MPT 預設修正為 pixabay) */
+  video_source?: 'pixabay' | 'pexels' | 'local';
+  /** 語言: zh-TW / zh-CN / en (MPT 預設 zh-TW) */
+  video_language?: string;
+  /** 語音: Edge TTS 繁中語音 (如 zh-TW-YunJheNeural) */
+  voice_name?: string;
+  /** 5T 溯源: 任務來源 (如 filedrop / webui / oa-swarm) */
+  source_origin: string;
+}
+
+export interface IVideoGenerationResult {
+  task_id: string;
+  /** 狀態: 1=完成, -1=失敗, 4=處理中 */
+  state: 1 | -1 | 4;
+  /** 生成影片路徑 (state=1 時) */
+  combined?: string[];
+  /** 5T 凍結產物 (關聯 ISoulArtifact) */
+  artifact?: ISoulArtifact;
+}
+
+export type GapUnitKey = 'strategy' | 'technology' | 'creative' | 'marketing' | 'guard';
+
+export type GapRole = 'base' | 'hub';
+
+export type GapHubKind = 'guard-defense' | 'queen-command';
+
+export interface IGapAgent {
+  /** 編號 01-30 */
+  id: number;
+  /** 稱號 (繁中) */
+  title: string;
+  /** Title (English) */
+  titleEn: string;
+  /** 所屬陣列 */
+  unit: GapUnitKey;
+}
+
+export interface IGapPairing {
+  /** 左側代理編號 */
+  a: number;
+  /** 右側代理編號 */
+  b: number;
+  /** 左側陣列 */
+  aUnit: GapUnitKey;
+  /** 右側陣列 */
+  bUnit: GapUnitKey;
+  /** 角色 */
+  role: GapRole;
+  /** 樞紐種類 (role=hub 時) */
+  hubKind?: GapHubKind;
+  /** 樞紐覆蓋陣列 (role=hub 時, 如 '全陣列'→ 五陣列皆列) */
+  coverage?: GapUnitKey[];
+  /** 5T 溯源標籤 (Traceable) */
+  source_origin: 'gap-matrix-canon';
+}
+
+export interface IGapMatrixCoverage {
+  /** 成員總數 */
+  totalAgents: 30;
+  /** 基礎配對數 (C(5,2)×6) */
+  totalBase: 60;
+  /** 樞紐配對數 (守衛防護 6 + 蜂后總控 6) */
+  totalHub: 12;
+  /** 配對總數 (60+12) */
+  totalPairings: 72;
+  /** 陣列對覆蓋 (C(5,2)) */
+  arrayPairs: 10;
+  /** 成員跨組觸達 */
+  reach: '30/30';
+}
