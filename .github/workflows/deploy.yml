@@ -143,7 +143,8 @@ jobs:
         with:
           node-version: 20
           cache: pnpm
-          cache-dependency-path: learning-center/pnpm-lock.yaml
+          # Repo root holds pnpm-lock.yaml; no learning-center/ subdir lockfile.
+          cache-dependency-path: pnpm-lock.yaml
 
       - name: Generate shared types
         run: cd esggo && node scripts/export-shared-types.js
